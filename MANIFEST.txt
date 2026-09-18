@@ -1,0 +1,17 @@
+From Lights to Flag bootstrap pack — 2026-09-18
+
+Root:
+  AGENTS.md
+  agents.ai
+  MANIFEST.txt
+
+Docs:
+  docs/PROJECT_OVERVIEW.md
+  docs/TECHNICAL_ARCHITECTURE.md
+  docs/ASSET_PIPELINE.md
+  docs/SOURCES_AND_PROVENANCE.md
+  docs/OPEN_DECISIONS.md
+  docs/DEVELOPMENT_LOG.md
+  docs/HANDOVER.md
+
+No .asm files are included in this bootstrap revision. This is deliberate: the first coding milestone should follow review of the owner's AMOS prototype/assets and finalisation of the build/toolchain convention.
