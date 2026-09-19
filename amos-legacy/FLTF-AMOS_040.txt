@@ -1,0 +1,5688 @@
+'' 
+'  --- FORMULA FUN  ... AKA ... THE BIG FOUR 
+'   -->> NOW. ...  'FROM LIGHTS TO FLAG!"    
+'    by Horace & The Spider - Dom Cresswell
+'
+'  Based on a driving engine concept by discomeats / bobamu (Robert Hill)      
+'   and ideas by Hungry Horace and Skateblind (Donavan Starke) 
+'
+'  Coding support by Michael Ness
+' coding thanks... Paul Dunn (rainbow routines)
+'' 
+' F1 seasons 
+'* 1986                  
+'>  1992 (6)     
+'*   1998  (6)   
+'     2003  (5)  ?   2009  2013/4 2018       
+'>     2009  (4) 
+'       2013  (4)  
+'>       2018  (5) - because Lewis did win 2019 LOL  
+'      
+'  
+'  minimum ... 1991 , 2000 , 2009 , 2018 ... 9 year intervalss 
+'
+' add Indy Car, Formula E and W Series in the future?
+'  
+Set Buffer 50
+Set Sprite Buffer 256
+Auto View Off 
+Multi No : Amos Pri 20
+
+Wait Vbl 
+
+
+Global GAMENAME$
+GAMEVERSION$="$VER:"+GAMENAME$+" v0.040"+Chr$($0)
+Global GAMEDRIVE$,SEASONDRIVE$,TRACKNAME$
+
+GAMENAME$="From Lights to Flag"
+
+' 2 disk (data disk mode) or HD
+If Exist(Dir$+"data/")
+   GAMEDRIVE$=Dir$
+Else 
+   GAMEDRIVE$="FLTF_MAIN:"
+End If 
+
+If Exist(Dir$+"championships/")
+   SEASONDRIVE$=Dir$+"championships/"
+   TRACKDRIVE$=Dir$+"NewTracks/"
+Else 
+   SEASONDRIVE$="FLTF_CHAMP:"
+   TRACKDRIVE$="FLTF_CHAMP:NewTracks"
+End If 
+
+
+If Exist(GAMEDRIVE$)=False
+   Write Cli "Failed to Start Game... Files not found"+Chr$($A)
+   End 
+End If 
+
+' variables used for the track data
+'Global COUNTRY_NUMBER 
+'Global RACE_NAME$,RACE_VENUE$ 
+'Global PITS_ZONEX,PITS_ZONEY,PITS_ZONEH,PITS_ZONEW
+'Global RACE_LAPS,CHKPOINTS  
+
+Global MXSPEED,ACCELLERATION,GEARRATIO,BRAKETIME,TURNCIRCLE,HIGHSPEED
+Global PLMODE0,PLMODE1,PLMODE2,PLMODE3
+Global CHAMP_MODE,COMMS_ON
+Global SEASON_PLAYLIST$,SEASON_RACES
+Global CAR_SPRITES
+
+CAR_SPRITES=16
+
+   Dim PLMODEN(3),PLCOM(3)
+Global PLMODEN(),PLCOM()
+
+CHAMP_MODE=False
+COMMS_ON=True
+
+' default modes for joysticks  
+
+Rem RACE_NAME$="BRITISH GRAND PRIX"
+Randomize Timer
+
+Dim CARPLACEX(3),CARPLACEY(3)
+Dim CARPITSX(3),CARPITSY(3)
+Dim LAPZONEX(3),LAPZONEY(3)
+'Global CARPLACEN,CARPLACEX(),CARPLACEY()
+'Global CARPITSN,CARPITSX(),CARPITSY() 
+Dim CHKPOINTX(31),CHKPOINTY(31)
+Dim CHKPOINTW(31),CHKPOINTH(31)
+
+Dim CHKMIDX(31),CHKMIDY(31)
+
+
+Global CROSS_ZONEX,CROSS_ZONEY
+Global CROSS_ZONEW,CROSS_ZONEH
+Global INVISI_ZONEX,INVISI_ZONEY
+Global INVISI_ZONEW,INVISI_ZONEH
+Global CROSSOVER_DIR
+Global CROSSOVER_ZONE_FIRST,CROSSOVER_ZONE_LAST
+' variables for the season stuff 
+Global GAMESEASON$,FILESEASON$
+
+
+Rem ... GAMESEASON$="The One Prize 2017" : FILESEASON$="TOP2017" 
+
+
+Dim PLYR_NAMES$(3),PLYR_SCORE(3)
+Dim PLYR_SKILL(3),PLYR_GRAF(3),PLYR_CONT(3)
+
+Dim RACE_SCORE(3)
+Global PLYR_NAMES$(),PLYR_SCORE(),PLYR_SKILL(),PLYR_GRAF(),PLYR_CONT()
+Global PLYR_MEMBERS
+
+Dim _TEAM$(3),_ENGINE$(3),_DRIVER$(7),_CARGRAPH(3),_TEAM_STATS$(3)
+Dim _GRAF(7),_SKILL(7),_CONT(7)
+
+Dim Z(16)
+Global _TEAM$(),_ENGINE$(),_DRIVER$(),_CARGRAPH(),_TEAM_STATS$()
+Global _GRAF(),_SKILL(),_CONT()
+
+Global ICONSTART,CARSTART
+Global RACECOUNT
+ICONSTART=567
+CARSTART=1000
+GICONSTART=1000-10
+
+Dim AIPOINTX(63),AIPOINTY(63),AIPOINTZ(63)
+
+Hide 
+DELAYSPEED=0
+Timer=0
+Repeat 
+ DELAYSPEED=DELAYSPEED+1
+Until Timer=40
+DELAYSPEED=DELAYSPEED/50
+If Cpu=68000 Then DELAYSPEED=0
+
+
+' lets set up some season stuff
+   Randomize Timer
+   BLAH=Rnd(4) : BLAH=0
+
+        If BLAH=0 : GAMESEASON$="" : FILESEASON$="TOP_2018"
+
+'   Else If BLAH=1 : GAMESEASON$="The One Prize 1986" : FILESEASON$="TOP1986"
+'   Else If BLAH=2 : GAMESEASON$="The One Prize 1992" : FILESEASON$="TOP1992"
+'   Else If BLAH=3 : GAMESEASON$="The One Prize 1998" : FILESEASON$="TOP1998"
+'   Else If BLAH=4 : GAMESEASON$="The One Prize 2009" : FILESEASON$="TOP2009"
+'   Else If BLAH=5 : GAMESEASON$="The One Prize 2017" : FILESEASON$="TOP2017"
+
+   Else : GAMESEASON$="No Season Loaded"
+   End If 
+
+   _GETSEASON
+   _GETCAR
+   _GARAGEICONS
+
+_TEMP_SETUPS:
+   PLMODEN(0)=5
+   PLMODEN(1)=0
+   PLMODEN(2)=0
+   PLMODEN(3)=0
+
+   PLYR_MEMBERS=%0
+
+   For NN=0 To 3
+       MM=Btst(NN,PLYR_MEMBERS)
+
+       PLYR_NAMES$(NN)=_DRIVER$((NN*2)-MM)
+       PLYR_GRAF(NN)=_GRAF((NN*2)-MM)
+       PLYR_CONT(NN)=_CONT((NN*2)-MM)
+       PLYR_SKILL(NN)=_SKILL((NN*2)-MM)
+   Next 
+
+
+'Screen Open 0,320,200,16,Lowres : For N=0 To 7 : Print _DRIVER$(N) : Next : Stop  
+
+
+GAMEDATASIZE=80
+
+
+' .... initialisation Variables (we will set these based on the team settings
+
+MXSPEED=200
+ACCELLERATION=1 : Rem -1-6- lower this and reach top-speed qquicker    
+                  Rem ---  (number of steps to top speed)
+ GEARRATIO=20 : Rem -- accelleration 20
+               Rem -- the length of each "step" 
+  BRAKETIME=7 : Rem -2-12- increase this to brake quicker  
+ TURNCIRCLE=2 : Rem -2-5 size of turning cirle!
+  HIGHSPEED=0 : Rem - speed limter (broken car etc) 0-3  
+
+
+Rem Gosub _PASSWORD
+Rem _GARAGE[3] 
+
+If Joy(1)>15 : FASTTRACK=True : PLMODEN(0)=1 : End If 
+If Joy(0)>15 : FASTTRACK=True : PLMODEN(0)=2 : End If 
+If Key State($60)=True : FASTTRACK=True : PLMODEN(0)=5 : End If 
+
+
+REALSTART:
+' === INTRO/LOADING SCREENS  
+
+
+' === TITLES / GAME MENUS  
+
+If FASTTRACK=False Then _TITLES
+_RUNSTART
+
+
+' === GAME / SEQUENCE
+   ' Setup the season (once)
+
+RACECOUNT=0
+
+_RESTART:
+
+
+' find the next race 
+
+
+   Repeat 
+
+        TRACKNAME$=Itemstr$(SEASON_PLAYLIST$,RACECOUNT,Chr$($FE))
+        TRACKNAME$=Replacestr$(TRACKNAME$,Chr$($FE) To "")
+
+        If RACECOUNT>=SEASON_RACES-1 : RACECOUNT=-1 : End If 
+        If Exist(TRACKDRIVE$+TRACKNAME$+"/")=False : Inc RACECOUNT : End If 
+
+      Until(Exist(TRACKDRIVE$+TRACKNAME$+"/")=True and TRACKNAME$<>"") or RACECOUNT=-1
+
+
+'== Game over man  
+   If RACECOUNT=-1
+         RACECOUNT=0
+         Screen Open 0,16,16,2,Lowres : Screen Hide 0
+         Goto REALSTART
+   End If 
+
+
+'== Do the Management Sections (Shop, Comms screen etc)  
+
+   For PLYA=0 To 3
+
+       If PLMODEN(PLYA)>0
+          If RACECOUNT<>0 and FASTTRACK=False : _RUN_COMMS[PLYA] : End If 
+        End If 
+   Next 
+
+   ' Do the race
+        Gosub _RUN_A_RACE
+
+   ' Display post-race results  
+
+      If CHAMP_MODE=True
+        _CHAMPIONSHIP_SCOREBOARD[WINNER,SECOND,THIRD,FOURTH]
+      Else 
+        _ARCADE_SCOREBOARD[WINNER,SECOND,THIRD,FOURTH]
+      End If 
+
+      Inc RACECOUNT
+
+
+   ' Continue season, or end? 
+Goto _RESTART : 
+End 
+
+_PASSWORD:
+
+Auto View On 
+Screen Open 3,640,200,16,Hires
+Screen 3 : Screen Show 3 : Cls 0 : Ink 2 : Paper 0 : Pen 2
+Colour 4,$F00 : Colour 5,$F0 : Flash 3,"(f0f,7)(ff0,7)(0ff,7)"
+Print "This is a private Beta - please enter the password: "
+Pen 0 : Input "";PSW$
+If PSW$="" Then Goto FAIL : 
+For N=1 To Len(PSW$)
+   PSW2$=PSW2$+Chr$(256-(Asc(Mid$(PSW$,N,1))+100))
+Next 
+
+If PSW2$<>"T;/30(-." Then Goto FAIL : 
+Pen 5 : Print "Password OK"
+Wait 100
+Screen Close 3
+Return 
+
+
+
+FAIL:
+Pen 4 : Print "Password Incorrect"
+Wait 100
+End 
+
+' ============= MAIN GAME SETUP ROUTINE
+_RUN_A_RACE:
+Auto View Off 
+Screen Open 0,16,16,2,Lowres : Screen Hide 0
+
+If TRACKNAME$="" : Return : End If 
+If GAMESEASON$="" : Return : End If 
+
+    If Length(20)<5
+        Load MAINDRIVE$+"sfx/sfx.abk",20
+        Pt Sam Bank 20
+        Bank Temporary 20
+     End If 
+
+
+_CIRCUITLOAD$=TRACKDRIVE$+TRACKNAME$+"/"
+
+If Exist(_CIRCUITLOAD$+"surfaces.mpp") and Cpu<>68000
+   Ppfromdisk _CIRCUITLOAD$+"surfaces.mpp",9
+Else 
+    Wload _CIRCUITLOAD$+"surfaces.map",9
+End If 
+
+Bank Name 9,"MapData"
+Write Cli "import track"+Chr$($A)
+Gosub IMPORT_TRACK
+
+Rem stop 
+
+If RACE_LAPS<1 : RACE_LAPS=15 : End If 
+
+If FASTTRACK=False Then _PRE_SCREEN
+
+For PLYA=0 To 3
+   If PLMODEN(PLYA)>0 and FASTTRACK=False : _GARAGE[PLYA] : End If 
+Next 
+
+Def Fn _MAPDATA=Peek(Start(9)+((PLYY*320)+PLYX)/4)
+EDGE=1
+BOUND_L=0+EDGE
+BOUND_R=320-EDGE
+BOUND_U=0+EDGE
+BOUND_B=240-EDGE
+
+' Grab our game graphics 
+
+
+
+'If Length(1)<100
+'   Erase 1
+
+
+    Write Cli "get car"+Chr$($A)
+   _GETCAR
+
+    Write Cli "get icons"+Chr$($A)
+   _GETICONS
+
+
+Rem Bank Temporary 1 
+Bank Permanent 1
+
+' grab palette 
+Write Cli "palettes"+Chr$($A)
+   'season specific Palette for cars  
+
+If Exist(SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".palette")
+   Wload SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".palette",13
+   For N=0 To 15
+      Z(N)=Deek(Start(13)+(N*2))
+   Next N
+   Erase 13
+Else 
+   ' Default Palette
+   Z(0)=0 : Z(1)=0 : Z(2)=$444 : Z(3)=$777
+   Z(4)=$BBB : Z(5)=$FFF : Z(6)=$B40 : Z(7)=$721
+   Z(8)=$F00 : Z(9)=$E91 : Z(10)=$FF0 : Z(11)=$C0
+   Z(12)=$60 : Z(13)=$8F : Z(14)=$4F : Z(15)=$18
+End If 
+Wait Vbl 
+Write Cli "dual screen setup"+Chr$($A)
+
+' Prevent AMOS from immediately showing screens
+Auto View Off 
+
+' Open the background screen and clear the palette 
+If Exist(_CIRCUITLOAD$+"Background.pac")
+   Wload _CIRCUITLOAD$+"Background.pac",19
+   Unpack 19 To 2
+   Erase 19
+
+Else If Exist(_CIRCUITLOAD$+"Background.iff")
+   Load Iff _CIRCUITLOAD$+"Background.iff",2
+Else 
+   Text 0,0,"File: "+_CIRCUITLOAD$+"Background.iff/.pac"+" is missing."
+   Return 
+End If 
+
+Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Wait Vbl 
+' Open the foreground screen and clear the palette 
+Rem Load Iff _CIRCUITLOAD$+"Foreground.iff",0
+
+If Exist(_CIRCUITLOAD$+"Foreground.pac")
+   Wload _CIRCUITLOAD$+"Foreground.pac",19
+   Unpack 19 To 0
+   Erase 19
+
+Else If Exist(_CIRCUITLOAD$+"Foreground.iff")
+   Load Iff _CIRCUITLOAD$+"Foreground.iff",0
+Else 
+   Text 0,0,"File: "+_CIRCUITLOAD$+"Foreground.iff/.pac"+" is missing."
+   Return 
+End If 
+
+Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Wait Vbl 
+' Show the (black) screens 
+Auto View On 
+Wait Vbl 
+'Write Cli "dual playfield"+Chr$($A) 
+' Set up the dual playfield  
+Dual Playfield 0,2
+Sprite Priority 0
+Hide 
+'Set Sprite Buffer 256 
+
+For N=0 To 7
+Sprite N,X Hard(-16),Y Hard(-16),0 : Sprite Update 
+Next 
+'Sprite Update On  
+Sprite Update Off 
+
+If Ntsc=True
+   Screen Display 0,,24,,0
+   Screen Offset 0,,0
+   Screen Offset 2,,0
+End If 
+
+' SET UP THE DISPLAY Screen  
+ '  Screen Open 3,320,20,8,Lowres : Curs Off : Flash Off  
+ '  Screen Display 3,,282,320,16
+ '  Cls 0 : Colour 0,$F0F 
+
+'Write Cli "race setup"+Chr$($A) 
+RACE_SETUP:
+Def Fn _AIPOINTX=Deek(Start(13)+(AITARGET*5)+0)
+Def Fn _AIPOINTY=Deek(Start(13)+(AITARGET*5)+2)
+Def Fn _AIPOINTZ=Peek(Start(13)+(AITARGET*5)+4)
+
+If AIPOINTS>0
+Reserve As Work 13,5*AIPOINTS
+   For Z=0 To AIPOINTS-1
+       Doke Start(13)+((Z*5)+0),AIPOINTX(Z)
+       Doke Start(13)+((Z*5)+2),AIPOINTY(Z)
+       Poke Start(13)+((Z*5)+4),AIPOINTZ(Z)
+   Next 
+Else 
+Reserve As Work 13,5*CHKPOINTS
+   For Z=0 To CHKPOINTS-1
+       Doke Start(13)+(Z*5)+0,CHKPOINTX(Z)+(CHKPOINTW(Z)/2)
+       Doke Start(13)+(Z*5)+2,CHKPOINTY(Z)+(CHKPOINTH(Z)/2)
+       Poke Start(13)+(Z*5)+4,1
+   Next 
+End If 
+Rem Bank Temporary 13
+Rem Stop 
+
+WEATHER=0
+D=Timer
+' setup the rainbow/copper 
+
+If WEATHER=1
+   Load GAMEDRIVE$+"data/wet.rain",14
+Else 
+   Load GAMEDRIVE$+"data/track.rain",14
+End If 
+
+Bank Temporary 14
+
+Rem _SUPER_RAINBOW[14,10,50,0] 
+Wait Vbl 
+'  
+'Write Cli "draw zones"+Chr$($A) 
+Reserve Zone 32
+Gosub _DRAW_ZONES : Wait Vbl 
+' this is used to allow signed number storage
+OVAL=256*128
+
+
+Rem -- starting paramatres 
+TARGETZONE=1
+COUNT=0
+SPEED=0
+TURBOCOUNT=0
+MXCOUNT=0
+HANDICAP=0
+HANDICOUNT=0
+
+_SUPER_RAINBOW[14,10,50,0]
+' get the starting locations for the gfx 
+Screen 0
+' other setups for the circuit 
+If CROSS_ZONEW<>0 and CROSS_ZONEH<>0
+   CROSSOVER_BOUND_U=CROSS_ZONEY
+   CROSSOVER_BOUND_B=CROSS_ZONEY+CROSS_ZONEH
+   CROSSOVER_BOUND_L=CROSS_ZONEX
+   CROSSOVER_BOUND_R=CROSS_ZONEX+CROSS_ZONEW
+End If 
+
+' Setup the fade to full color and wait for it to complete 
+If WEATHER=1
+  Fade 2,$0,$555,$676,$798,$158,$983,$612,$60,$0,$223,$457,$78A,$127,$760,$320,$21,Z(0),Z(1),Z(2),Z(3),Z(4),Z(5),Z(6),Z(7),Z(8),Z(9),Z(10),Z(11),Z(12),Z(13),Z(14),Z(15)
+
+Else 
+  Fade 2,$0,$444,$999,$CCC,$7D,$DB1,$D02,$B0,$0,$333,$666,$999,$459,$960,$830,$60,Z(0),Z(1),Z(2),Z(3),Z(4),Z(5),Z(6),Z(7),Z(8),Z(9),Z(10),Z(11),Z(12),Z(13),Z(14),Z(15)
+End If 
+
+Wait 15*2
+_SUPER_RAINBOW[14,10,50,0]
+Wait Vbl 
+
+'Write Cli "race loop"+Chr$($A)
+RACE_COMPLETE=False
+RACE_LOOP:
+
+
+If CHAMP_MODE=False : RACE_LAPS=RACE_LAPS/3 : End If 
+Rem --- find me temp laps  
+
+
+MXSETUP:
+
+NXSPEED=MXSPEED
+
+' skills 
+   MM=Btst(0,PLYR_MEMBERS) : SKILL0=_SKILL((0*2)-MM)
+   MM=Btst(1,PLYR_MEMBERS) : SKILL1=_SKILL((1*2)-MM)
+   MM=Btst(2,PLYR_MEMBERS) : SKILL2=_SKILL((2*2)-MM)
+   MM=Btst(3,PLYR_MEMBERS) : SKILL3=_SKILL((3*2)-MM)
+
+
+'SKILL0=156+Rnd(100) 
+'SKILL1=156+Rnd(100) 
+'SKILL2=206+Rnd(50)
+'SKILL3=181+Rnd(75)
+
+' SKILL1=56
+' SKILL2=56
+' SKILL3=56
+
+'==================
+' base setup for PLYRDATA , but this should be 
+' imported from earlier in the game program. 
+'
+
+SPOTS=0
+
+For PLY=0 To 3
+
+
+
+   Rem : DO **NOT** GET PLAYER DATA HERE IF GOING FOR DEFAULTS
+        If PLY=0 : MXSPEED=NXSPEED : RemRnd(30) 
+   Else If PLY=1 : MXSPEED=NXSPEED-20+Rnd(40)
+   Else If PLY=2 : MXSPEED=NXSPEED-20+Rnd(40)
+   Else If PLY=3 : MXSPEED=NXSPEED-20+Rnd(40)
+   End If 
+        If PLY=0 : PLYMODE=PLMODEN(0)
+   Else If PLY=1 : PLYMODE=PLMODEN(1)
+   Else If PLY=2 : PLYMODE=PLMODEN(2)
+   Else If PLY=3 : PLYMODE=PLMODEN(3)
+   End If 
+
+   If MXSPEED<1 : MXSPEED=1 : End If 
+   AICOUNT=1 : MXCOUNT=0
+   LAPX=LAPZONEX(PLY)
+   LAPY=LAPZONEY(PLY)
+   For PLY2=0 To 3
+      If Btst(PLY2,SPOTS)=False and PLMODEN(PLY)>-1
+         Bset PLY2,SPOTS
+         PLYY=CARPLACEY(PLY2)
+         PLYX=CARPLACEX(PLY2)
+         Exit 
+      End If 
+   Next 
+   PLYZ=CARPLACEN
+   CURRENTFLAG=0
+   LASTFLAG=0
+   LASTZONE=0 : Rem CHKPOINTS
+   TARGETZONE=1
+   LAPCOUNT=0
+   AITARGET=0
+   HOLDCOUNT=0
+   JUMPSTART=Rnd(80) : JUMPSTART=JUMPSTART-40 : If JUMPSTART<0 : JUMPSTART=0 : End If 
+   Rem Ink 0,PLY+4 : Text 30+(20*PLY),210,Lzstr$(JUMPSTART,2) 
+   If PLMODEN(PLY)>-1 : Gosub GRAPHICS : End If 
+   Gosub LAP_GRAPHICS
+   Gosub PLYDATAPUSH
+   Rem End If 
+Next 
+
+
+   Gosub REFRESH
+
+' ============= setup the acceleration stuff 
+SUPERBLOCKSIZE=8
+NMXSPEED=4
+For PLY=0 To 3
+   Gosub PLYDATAGET
+   SUPERBLOCKSIZE=SUPERBLOCKSIZE+(GEARRATIO*8)
+Next 
+Reserve As Work 11,SUPERBLOCKSIZE
+
+ACL_POKES:
+
+For PLY=0 To 3
+   Gosub PLYDATAGET
+
+   If PLY=0 : Doke(Start(11)+0),8 : End If 
+   If PLY=1 : Doke(Start(11)+2),Deek(Start(11)+0)+((GEARRATIO)*8) : End If 
+   If PLY=2 : Doke(Start(11)+4),Deek(Start(11)+2)+((GEARRATIO)*8) : End If 
+   If PLY=3 : Doke(Start(11)+6),Deek(Start(11)+4)+((GEARRATIO)*8) : End If 
+
+    OFFSTART=Deek(Start(11)+(PLY*2))
+    BLOCKSIZE=GEARRATIO*4
+   ' zz will become holdcount in-game 
+   ' ww will become mxspeed 
+   WW=NMXSPEED
+   If PLY=0 Then WW=8
+   If PLY=1 Then WW=1
+   If PLY=3 Then WW=7
+   If BLOCKSIZE>0
+   For ZZ=0 To BLOCKSIZE-1
+      AA=ZZ/GEARRATIO
+      SPEED=3-AA
+      BB=ZZ mod GEARRATIO
+      CC=(800/GEARRATIO)*BB
+      DD=Int(CC+100)/100
+      If SPEED=0
+         DD=Min(DD,WW)
+      End If 
+      Poke Start(11)+OFFSTART+(ZZ*2)+0,SPEED
+      Poke Start(11)+OFFSTART+(ZZ*2)+1,DD
+   Next 
+End If 
+
+' ==== 
+'  If PLY=0 : SKILL=SKILL0 : End If    
+'  If PLY=1 : SKILL=SKILL1 : End If    
+'  If PLY=2 : SKILL=SKILL2 : End If    
+'  If PLY=3 : SKILL=SKILL3 : End If    
+' Ink 0,15 : Text 80+(PLY*50),8,Lzstr$(SKILL,3)  
+
+Next 
+
+
+
+
+Wait 50
+' for the start  
+Gosub LIGHTS_SEQUENCE
+
+' anything that needs reseting at race start goes here 
+LIGHTTIMER=50+Rnd(50)
+
+Rem Global ROTATE,VCOUNT 
+
+ACTUAL_LOOP:
+MASTERCOUNT=0
+Repeat 
+   STANDARDFLAG=1
+   ' this is the loop 
+   If LIGHTTIMER>0
+         LIGHTTIMER=LIGHTTIMER-1
+         If LIGHTTIMER=0
+               CURRENTFLAG=1
+               Poke(Start(10)+(GAMEDATASIZE*0)+42),CURRENTFLAG
+               Poke(Start(10)+(GAMEDATASIZE*1)+42),CURRENTFLAG
+               Poke(Start(10)+(GAMEDATASIZE*2)+42),CURRENTFLAG
+               Poke(Start(10)+(GAMEDATASIZE*3)+42),CURRENTFLAG
+               Rem Bell 50
+               SFX=2 : V=%1100 : Gosub PLY_SFX
+         End If 
+   End If 
+
+
+   For PLY=0 To 3
+   If PLMODEN(PLY)>-1
+      Gosub PLYDATAGET
+      Gosub INPOTS
+      Gosub JSTUFF
+      Gosub ACCELCAR
+      Gosub CHKZONE
+      Gosub CHANGEFLAG
+      Gosub MOVECAR
+      If TURBOCOUNT>0
+         Gosub MOVECAR
+      End If 
+'       COUNT=COUNT+1
+      Rem TENCOUNT=TENCOUNT+1
+      Rem If TENCOUNT>ACCELLERATION Then TENCOUNT=0
+      If TURBOCOUNT>0 : TURBOCOUNT=TURBOCOUNT-1 : End If 
+      Gosub GRAPHICS
+      Gosub PLYDATAPUSH
+      If FOURCOUNT=8 : FOURCOUNT=0 : End If 
+   End If 
+   Next PLY
+
+' rem--- allow the animation 
+
+   If LIGHTTIMER=0
+    VCOUNT=VCOUNT+1
+    If VCOUNT>4 : ROTATE=1-ROTATE : VCOUNT=0 : End If 
+   End If 
+
+   MASTERCOUNT=MASTERCOUNT+1
+
+   Gosub REFRESH
+
+
+Until 1=0 or RACE_COMPLETE=True
+
+
+QUITTED:
+
+'If RACE_COMPETE<>True 
+'
+'  we will make this more complex in time  
+'   WINNER2=Rnd(3) 
+'
+'   For PLY=0 To 3 
+'      Gosub PLYDATAGET
+'        FLAGDELAY=0 
+'        If PLY=WINNER2 : CURRENTFLAG=8 : LAPCOUNT=RACE_LAPS : TARGETZONE=1
+'        Else : CURRENTFLAG=6
+'         End If 
+'      Gosub PLYDATAPUSH 
+'    Next  
+'' 
+'    RACE_COMPLETE=True
+'
+'End If  
+
+
+RACE_OVER:
+' play tune, do a graphic, etc 
+' calculate anything needed on scores/results etc  
+
+   For PLY=0 To 3
+      Gosub PLYDATAGET
+      Gosub CHANGEFLAG
+      If PLMODEN(PLY)>1 Then Gosub GRAPHICS
+   Next PLY
+
+   Gosub REFRESH
+   Wait 120
+
+' SCREEN EFFECTS 
+Rem _SUPER_RAINBOW[14,10,-100,0] 
+Rainbow Del 0 : Wait Vbl : Update 
+Screen 0
+Fade 2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Wait 15*4 : Sprite Off : Sprite Update 
+Reserve Zone 
+Erase 14
+Screen Close 2
+
+' lets calcualte the scores
+' Its 100,000 for the win
+'  
+
+SCORE_4_LAPS#=100000/RACE_LAPS
+SCORE_4_ZONE#=SCORE_4_LAPS#/CHKPOINTS
+Rem Print "Lap score"+Str$(SCORE_4_LAPS#)
+Rem Print "zone score"+Str$(SCORE_4_ZONE#) 
+
+WINNER=-1 : SECOND=-1 : THIRD=-1 : FOURTH=-1
+
+For PLY=0 To 3
+   Gosub PLYDATAGET
+   If PLMODEN(PLY)>-1
+   MYSCORE=0
+   PARTSCORE=0
+   MYSCORE=LAPCOUNT*SCORE_4_LAPS#
+   If CURRENTFLAG=8 and WINNER=-1 : WINNER=PLY : MYSCORE=100000 : End If 
+
+   If LAPCOUNT<RACE_LAPS
+      MYSCORE=MYSCORE+(LASTZONE*SCORE_4_ZONE#)
+      TARGX=CHKPOINTX(TARGETZONE)+(CHKPOINTW(TARGETZONE)/2)
+      TARGY=CHKPOINTY(TARGETZONE)+(CHKPOINTH(TARGETZONE)/2)
+      LASTX=CHKPOINTX(LASTZONE)+(CHKPOINTW(LASTZONE)/2)
+      LASTY=CHKPOINTY(LASTZONE)+(CHKPOINTH(LASTZONE)/2)
+      LONGX=Abs(TARGX-LASTX)
+      LONGY=Abs(TARGY-LASTY)
+      LONGX=(LONGX*LONGX)
+      LONGY=(LONGY*LONGY)
+      LONGZ=Sqr(LONGX+LONGY)
+      SHORTX=Abs(TARGX-PLYX)
+      SHORTY=Abs(TARGX-PLYY)
+      SHORTX=SHORTX*SHORTX
+      SHORTY=SHORTY*SHORTY
+      SHORTZ=Sqr(SHORTX+SHORTY)
+      CALCZ=Abs(LONGZ-SHORTZ)
+      If CALCZ=>100 : CALCZ=99 : End If 
+      If LASTZONE<>0
+         PARTSCORE=(SCORE_4_ZONE#*CALCZ)/100
+      End If 
+      MYSCORE=MYSCORE+PARTSCORE
+   End If 
+   RACE_SCORE(PLY)=MYSCORE
+   End If 
+
+Next 
+
+RACE_RANKINGS:
+' ** CLEAR UP THE RANKINGS **  
+If WINNER<>-1
+   For PLY=0 To 3
+     If RACE_SCORE(PLY)<=RACE_SCORE((PLY+1) mod 4) and RACE_SCORE(PLY)<=RACE_SCORE((PLY+2) mod 4) and RACE_SCORE(PLY)<=RACE_SCORE((PLY+3) mod 4)
+       FOURTH=PLY
+       Exit 
+     End If 
+   Next 
+' SORT THE REMAINING TWO 
+   For PLY=0 To 3
+      If PLY<>WINNER and PLY<>FOURTH
+      SECOND=PLY : Exit 
+      End If 
+   Next 
+   For PLY=0 To 3
+      If PLY<>WINNER and PLY<>FOURTH and PLY<>SECOND
+      THIRD=PLY : Exit 
+      End If 
+   Next 
+   If RACE_SCORE(SECOND)<RACE_SCORE(THIRD) : Swap SECOND,THIRD : End If 
+   ' ADD POINTS FOR PODIUM
+     RACE_SCORE(WINNER)=RACE_SCORE(WINNER)+25000
+     RACE_SCORE(SECOND)=RACE_SCORE(SECOND)+10000
+     RACE_SCORE(THIRD)=RACE_SCORE(THIRD)+5000
+End If 
+
+
+' ADD TO ARCADE SCORES 
+ If CHAMP_MODE=False : Rem .... ARCADE MODE SCORES
+
+    For PLY=0 To 3
+       PLYR_SCORE(PLY)=PLYR_SCORE(PLY)+RACE_SCORE(PLY)
+    Next 
+
+    ' third place
+    LIVES=Peek(Start(10)+(GAMEDATASIZE*THIRD)+76)
+    Dec LIVES
+    Poke Start(10)+(GAMEDATASIZE*THIRD)+76,LIVES
+
+
+    ' fouth place
+    LIVES=Peek(Start(10)+(GAMEDATASIZE*FOURTH)+76)
+    Dec LIVES
+    Poke Start(10)+(GAMEDATASIZE*FOURTH)+76,LIVES
+
+
+' ADD TO CHAMPIONSHIP SCORES 
+ Else 
+   PLYR_SCORE(WINNER)=PLYR_SCORE(WINNER)+10
+   PLYR_SCORE(SECOND)=PLYR_SCORE(SECOND)+5
+   PLYR_SCORE(THIRD)=PLYR_SCORE(THIRD)+3
+   PLYR_SCORE(FOURTH)=PLYR_SCORE(FOURTH)+1
+ End If 
+
+
+   Clear Key 
+   Wait Vbl 
+   TRACKNAME$=""
+Return 
+PLYDATAGET:
+   STRTVL=Start(10)+(GAMEDATASIZE*PLY)
+       PLYMODE=Deek(STRTVL+0)
+       AICOUNT=Deek(STRTVL+2)
+      TENCOUNT=Deek(STRTVL+4)-OVAL
+    TURBOCOUNT=Deek(STRTVL+6)-OVAL
+     HOLDCOUNT=Deek(STRTVL+8)-OVAL
+ ACCELLERATION=Deek(STRTVL+10)-OVAL
+         SPEED=Deek(STRTVL+12)-OVAL
+      SLOWZONE=Deek(STRTVL+14)
+     HIGHSPEED=Deek(STRTVL+16)-OVAL
+     GEARRATIO=Deek(STRTVL+18)-OVAL
+      TURNHOLD=Deek(STRTVL+20)-OVAL
+    TURNCIRCLE=Deek(STRTVL+22)-OVAL
+    BRAKETIME=Deek(STRTVL+24)-OVAL
+          PLYX=Deek(STRTVL+26)-OVAL
+          PLYY=Deek(STRTVL+28)-OVAL
+          PLYZ=Deek(STRTVL+30)-OVAL
+       TRIGHOLD=Deek(STRTVL+32)-OVAL
+      FOURCOUNT=Deek(STRTVL+34)-OVAL
+    TARGETZONE=Deek(STRTVL+36)-OVAL
+      LASTZONE=Deek(STRTVL+38)-OVAL
+      LAPCOUNT=Deek(STRTVL+40)-OVAL
+      CURRENTFLAG=Peek(STRTVL+42)
+         LASTFLAG=Peek(STRTVL+43)
+         FLAGHOLD=Peek(STRTVL+44)
+         JUMPSTART=Peek(STRTVL+45)
+         NOMOVE=Peek(STRTVL+47)
+         AITARGET=Peek(STRTVL+48)
+         AIDELAY=Peek(STRTVL+49)-128
+         LAPX=LAPZONEX(PLY)
+         LAPY=LAPZONEY(PLY)
+         'MXSPEED=Deek(STRTVL+50) 
+         MXCOUNT=Deek(STRTVL+52)
+         HOLDCOUNT2=Deek(STRTVL+54)-OVAL
+         INPITS=Peek(STRTVL+56)
+Return 
+
+PLYDATAPUSH:
+
+  STRTVL=Start(10)+(GAMEDATASIZE*PLY)
+         Doke(STRTVL+0),PLYMODE
+         Doke(STRTVL+2),AICOUNT
+         Doke(STRTVL+4),TENCOUNT+OVAL
+         Doke(STRTVL+6),TURBOCOUNT+OVAL
+         Doke(STRTVL+8),HOLDCOUNT+OVAL
+         Doke(STRTVL+10),ACCELLERATION+OVAL
+         Doke(STRTVL+12),SPEED+OVAL
+         Doke(STRTVL+14),SLOWZONE
+         Doke(STRTVL+16),HIGHSPEED+OVAL
+         Doke(STRTVL+18),GEARRATIO+OVAL
+         Doke(STRTVL+20),TURNHOLD+OVAL
+         Doke(STRTVL+22),TURNCIRCLE+OVAL
+         Doke(STRTVL+24),BRAKETIME+OVAL
+         Doke(STRTVL+26),PLYX+OVAL
+         Doke(STRTVL+28),PLYY+OVAL
+         Doke(STRTVL+30),PLYZ+OVAL
+         Doke(STRTVL+32),TRIGHOLD+OVAL
+         Doke(STRTVL+34),FOURCOUNT+OVAL
+         Doke(STRTVL+36),TARGETZONE+OVAL
+         Doke(STRTVL+38),LASTZONE+OVAL
+         Doke(STRTVL+40),LAPCOUNT+OVAL
+         Poke(STRTVL+42),CURRENTFLAG
+         Poke(STRTVL+43),LASTFLAG
+         Poke(STRTVL+44),FLAGHOLD
+         Poke(STRTVL+45),JUMPSTART
+         Doke(STRTVL+54),HOLDCOUNT2+OVAL
+         Poke(STRTVL+47),NOMOVE
+         Poke(STRTVL+48),AITARGET
+         Poke(STRTVL+49),AIDELAY+128
+         'Doke(STRTVL+50),MXSPEED 
+         Doke(STRTVL+52),MXCOUNT
+         Poke(STRTVL+56),INPITS
+
+
+
+
+Return 
+' =========== AI control 
+
+AI:
+   INPPY=0
+   If JUMPSTART>0 and LIGHTTIMER<1 : JUMPSTART=JUMPSTART-1 : Return : End If 
+   AREA=18
+   REALTARGX= Fn _AIPOINTX
+   REALTARGY= Fn _AIPOINTY
+
+' experimental 
+'   AITARGET=AITARGET+1 : If AITARGET<0 Then AITARGET=AIPOINTS-1 
+
+    REALTARGZ= Fn _AIPOINTZ
+
+Rem OLD CODE 
+Rem Turbo Plot REALTARGX,REALTARGY,PLY+4 
+
+   B=AITARGET-1 : If B<0 Then B=AIPOINTS-1
+   Swap AITARGET,B
+   LASTTARGZ= Fn _AIPOINTZ
+   Swap AITARGET,B
+
+' the 'previous target' rotation (Z) = lasttargz 
+
+   TARGZ=0
+        If AIDELAY>0 : AIDELAY=AIDELAY-1 : TARGZ=LASTTARGZ
+   Else If AIDELAY<0 : AIDELAY=AIDELAY+1 : Return 
+   End If 
+         ZDIFF=(LASTTARGZ-PLYZ)
+      If ZDIFF<-8 : ZDIFF=ZDIFF+16
+ Else If ZDIFF>8 : ZDIFF=ZDIFF-16
+ End If 
+      ZDIFF=Abs(ZDIFF)
+
+ ' set direction / movement 
+  ' if turn required > 105-180, dont accell 100% 
+   ' if turn required < 105 , accell
+
+   If ZDIFF>5 and HOLDCOUNT>2
+       Bclr 4,INPPY
+
+   Else If LIGHTTIMER=0 and JUMPSTART<1
+       Bset 4,INPPY
+   End If 
+
+SKIP1:
+ ' if we are blocked try turning
+      If NOMOVE>20
+         AIDELAY=0
+         TARGZ=PLYZ-4
+         If TARGZ<0 : TARGZ=TARGZ+16 : End If 
+         Bset 4,INPPY
+
+      Else If NOMOVE>10 and TARGZ=0
+         AREA=5
+         TARGZ=LASTTARGZ
+         AIDELAY=0
+      End If 
+
+ ' AI zone check
+   If(Abs(REALTARGX-PLYX)<AREA and Abs(REALTARGY-PLYY)<AREA)
+       Rem If PLY=1 : Bell : End If 
+
+       If TARGZ=0
+  Rem       TARGZ=REALTARGZ
+         TARGZ=LASTTARGZ
+
+         AITARGET=AITARGET+1
+         If AITARGET>AIPOINTS-1 : AITARGET=0 : End If 
+         AIDELAY=10
+        End If 
+  End If 
+
+SKIP2:
+      If TARGZ<>0 Then Goto SKIP3 : 
+
+      TEMPX=((REALTARGX*10)-(PLYX*10))
+      TEMPY=(REALTARGY-PLYY)
+      If TEMPY=0 : TEMPY=1 : End If 
+      TEMPZ=TEMPX/TEMPY
+
+     If PLYX<REALTARGX
+           If TARGZ<>0
+      Else If TEMPZ>39 : TARGZ=5
+      Else If TEMPZ>15 : TARGZ=6
+      Else If TEMPZ>7 : TARGZ=7
+      Else If TEMPZ>1 : TARGZ=8
+      Else If TEMPZ=0 : TARGZ=9 : Rem bugfix 
+      Else If TEMPZ<0 : TARGZ=1
+      Else If TEMPZ<-1 : TARGZ=2
+      Else If TEMPZ<-7 : TARGZ=3
+      Else If TEMPZ<-15 : TARGZ=4
+      Else If TEMPZ<-39 : TARGZ=5
+      Else If TEMPZ=0 and TEMPY<0 : TARGZ=1
+      Else If TEMPZ=0 and TEMPY>0 : TARGZ=9
+      Else If TEMPZ=0 : Stop 
+       End If 
+      Else If PLYX>REALTARGX
+           If TARGZ<>0
+      Else If TEMPZ>39 : TARGZ=13
+      Else If TEMPZ>15 : TARGZ=14
+      Else If TEMPZ>7 : TARGZ=15
+      Else If TEMPZ>1 : TARGZ=16
+      Else If TEMPZ=0 : TARGZ=1 : Rem bugfix 
+      Else If TEMPZ<0 : TARGZ=9
+      Else If TEMPZ<-1 : TARGZ=10
+      Else If TEMPZ<-7 : TARGZ=11
+      Else If TEMPZ<-15 : TARGZ=12
+      Else If TEMPZ<-39 : TARGZ=13
+      Else If TEMPZ=0 and TEMPY<0 : TARGZ=1
+      Else If TEMPZ=0 and TEMPY>0 : TARGZ=9
+      Else If TEMPZ=0 : Stop 
+         Else 
+       End If 
+        Rem  Screen 0 : If PLY=1 : Text 20,60,Lzstr$(TARGZ,3) : End If 
+      End If 
+SKIP3:
+' do this according to rotation
+
+   If PLYZ=TARGZ
+         Bclr 2,INPPY
+         Bclr 3,INPPY
+         Return 
+   End If 
+      TEMP_TARGZ=TARGZ
+      TEMP_TARGZ=TEMP_TARGZ-PLYZ
+      If TEMP_TARGZ<0 Then TEMP_TARGZ=TEMP_TARGZ+16
+           If TEMP_TARGZ=0
+             Bclr 2,INPPY
+             Bclr 3,INPPY
+
+      Else If TEMP_TARGZ=8
+             Bset 3,INPPY
+
+      Else If TEMP_TARGZ>8
+            Bset 2,INPPY
+
+      Else 
+            Bset 3,INPPY
+      End If 
+
+      Rem Ink 0,PLY+4 : Text 50+(PLY*50),8,Lzstr$(TARGZ,2) 
+
+      If PLY=0 Then SKILL=SKILL0
+      If PLY=1 Then SKILL=SKILL1
+      If PLY=2 Then SKILL=SKILL2
+      If PLY=3 Then SKILL=SKILL3
+
+  ' lights out 
+      If LIGHTTIMER<>0
+             Bclr 2,INPPY
+             Bclr 3,INPPY
+      End If 
+
+   ' we will precalculate this
+      If AIDELAY=0 Then AIDELAY=Rnd(255)>SKILL
+  Rem       AIDELAY=0
+Return 
+
+
+AUTOPIT_IN:
+Return 
+
+
+AUTOPIT_OUT:
+Return 
+
+' =========== input control .... 
+INPOTS:
+   If PLYMODE=-1 Then Return 
+
+Rem    If INPITS=1 : Gosub AUTOPIT_IN : Return : End If  
+Rem    If INPITS=2 : Gosub AUTOPIT_OUT : Return : End If   
+
+
+   If PLYMODE=0
+      Gosub AI
+   Else If PLYMODE=1 : INPPY=Joy(1)
+   Else If PLYMODE=2 : INPPY=Joy(0)
+   Else If PLYMODE=3 : INPPY=Ext Joy(0)-(Pfire(0)*16)
+   Else If PLYMODE=4 : INPPY=Ext Joy(1)-(Pfire(1)*16)
+   Else 
+      If PLYMODE=5 and Key State($4C)=True : Bset 0,INPPY : End If 
+      If PLYMODE=5 and Key State($4C)=False : Bclr 0,INPPY : End If 
+
+      If PLYMODE=5 and Key State($4D)=True : Bset 1,INPPY : End If 
+      If PLYMODE=5 and Key State($4D)=False : Bclr 1,INPPY : End If 
+
+      If PLYMODE=5 and Key State($4F)=True : Bset 2,INPPY : End If 
+      If PLYMODE=5 and Key State($4F)=False : Bclr 2,INPPY : End If 
+
+      If PLYMODE=5 and Key State($4E)=True : Bset 3,INPPY : End If 
+      If PLYMODE=5 and Key State($4E)=False : Bclr 3,INPPY : End If 
+
+      If PLYMODE=5 and Key State($60)=True : Bset 4,INPPY : End If 
+      If PLYMODE=5 and Key State($60)=False : Bclr 4,INPPY : End If 
+   End If 
+
+    'If INPPY2<>0 : INPPY=INPPY2 
+    '   INPPY=INPPY-(Btst(4,INPPY)*16) 
+    'End If  
+
+' cheat! 
+  If Key State($50+PLY)=True
+
+        THISPLY=PLY
+        For PLY=0 To 3
+          CURRENTFLAG=6
+        Next 
+        PLY=THISPLY
+
+        LAPCOUNT=RACE_LAPS
+        TARGETZONE=1
+        CURRENTFLAG=8
+        FLAGDELAY=0
+        Gosub CHANGEFLAG
+        RACE_COMPLETE=True
+        WINNER=PLY
+   End If 
+
+   If PLY<>0 Then Return 
+
+' these key checks are only needed once
+  ' RAINBOW DEBUGGING
+  ' If Key State($40)=True 
+  '    _SUPER_RAINBOW[11,10,50,0]
+  ' End If 
+
+  ' press F1/4 for end position  
+
+
+
+  ' MANUAL SPEED ADJUST
+
+   If Key State($B)=True
+      If(Key State($60)=False and Key State($61)=False)
+         Dec DELAYSPEED
+      Else 
+         DELAYSPEED=DELAYSPEED-10
+      End If 
+   Text 240,232,Lzstr$(DELAYSPEED,6)
+   End If 
+
+   If Key State($C)=True
+      If(Key State($60)=False and Key State($61)=False)
+         Inc DELAYSPEED
+      Else 
+         DELAYSPEED=DELAYSPEED+10
+      End If 
+   Text 240,232,Lzstr$(DELAYSPEED,6)
+   End If 
+
+Return 
+
+CHANGEFLAG:
+If FLAGHOLD>0
+   FLAGHOLD=FLAGHOLD-1
+End If 
+
+
+If CURRENTFLAG<>LASTFLAG and FLAGHOLD<1
+   LASTFLAG=CURRENTFLAG
+   Screen 2
+   Ink 0 : Bar LAPX+43,LAPY To LAPX+43+11,LAPY+6
+   Paste Bob LAPX+43,LAPY,ICONSTART+(40*8)+7+CURRENTFLAG
+   Screen 0
+   Paste Bob LAPX+43,LAPY,ICONSTART+(40*8)-1+CURRENTFLAG
+   FLAGHOLD=5
+End If 
+
+Return 
+
+LIGHTS_SEQUENCE:
+
+Rem remove this!!
+
+Ink 2 : Paper 7
+For N=0 To 3
+   ' LIGHTS SFX 
+   Rem Bell 40
+   INX=LAPZONEX(N)+42
+   INY=LAPZONEY(N)+0
+   Screen 2
+   Paste Bob INX,INY,ICONSTART+(40*8)+9
+   Screen 0
+   Paste Bob INX,INY,ICONSTART+(40*8)+1
+   If N<>3 : Wait 40 : End If 
+Next 
+
+Return 
+CHKZONE:
+   S=(PLY+1)*2
+   'N=Hzone(X Sprite(S),Y Sprite(S))
+
+    N=Hit Spr Zone(0,0,S)
+
+   ' replace this wiht the faster "Hit Spr Zone (dx,dy,n) 
+   '  ie. sprite hits zone. dx/dy offets from 
+
+   ' consider replacing the ZONES with CHECKS (Turbo extension) 
+
+   ' we need some rules for the crossover 
+        If N=33 and LASTZONE>CROSSOVER_ZONE_FIRST and LASTZONE<CROSSOVER_ZONE_LAST
+           UNDERPASS=True : OVERPASS=False
+   Else If N=33
+           UNDERPASS=False : OVERPASS=True
+   Else 
+            OVERPASS=False : UNDERPASS=False
+   End If 
+
+   ' we need to make some rules for the pitlane 
+
+        If N=34 and INPITS=0
+            INPITS=1
+   Else If N<>34 : INPITS=0
+    End If 
+
+   If INPITS<>0 Then CURRENTFLAG=4
+
+   If N<>0 and N<33
+      If LASTZONE<>N
+         LASTZONE=N
+      End If 
+      If N=TARGETZONE
+         If INPITS=0 : CURRENTFLAG=STANDARDFLAG : End If 
+
+         TARGETZONE=TARGETZONE+1
+         If TARGETZONE>CHKPOINTS
+            TARGETZONE=1
+            LAPCOUNT=LAPCOUNT+1
+            If LAPCOUNT=RACE_LAPS : RACE_COMPLETE=True : FLAGDELAY=0 : CURRENTFLAG=8 : End If 
+            Gosub LAP_GRAPHICS
+         End If 
+      End If 
+
+      If TARGETZONE-LASTZONE>1
+               TARGETZONE=N
+      Else If(LASTZONE=CHKPOINTS and TARGETZONE<>CHKPOINTS)
+               TARGETZONE=1
+               If LAPCOUNT<>0 and CURRENTFLAG<>8
+                  CURRENTFLAG=3
+               End If 
+      Else If TARGETZONE=1 and LASTZONE<>CHKPOINTS
+               CURRENTFLAG=3
+      End If 
+   End If 
+
+   Rem If INPITS=True Then CURRENTFLAG=4
+
+
+Return 
+ACCELCAR:
+    STRTAC=Start(11)+Deek(Start(11)+(PLY*2))
+       BB=HOLDCOUNT
+    If BB>(GEARRATIO*4)-1 Then BB=(GEARRATIO*4)-1
+       CC=Peek(STRTAC+(BB*2)+0)
+     GEAR=Peek(STRTAC+(BB*2)+1)
+   If GEAR<1 Then GEAR=1
+   If GEAR>8 Then GEAR=8
+
+
+
+   Gosub "GEAR_"+Lzstr$(GEAR,1)
+   SPEED=SPEED+CC
+
+    If SLOWZONE=1 Then SPEED=SPEED+2
+    If SPEED>3 Then SPEED=3
+    If SPEED<0 Then SPEED=0
+
+'   If Cpu>68000 and PLY=0 
+'         Text 5,215,Lzstr$(SPEED,2) 
+'         Text 5,235,Lzstr$(GEAR,2)
+'    End If  
+Return 
+
+GEAR_1:
+    If FOURCOUNT=0 Then SPEED=0
+    If FOURCOUNT=1 Then SPEED=1
+    If FOURCOUNT=2 Then SPEED=1
+    If FOURCOUNT=3 Then SPEED=1
+    If FOURCOUNT=4 Then SPEED=1
+    If FOURCOUNT=5 Then SPEED=1
+    If FOURCOUNT=6 Then SPEED=1
+    If FOURCOUNT=7 Then SPEED=1
+Return 
+GEAR_2:
+    If FOURCOUNT=0 Then SPEED=0
+    If FOURCOUNT=1 Then SPEED=1
+    If FOURCOUNT=2 Then SPEED=1
+    If FOURCOUNT=3 Then SPEED=1
+    If FOURCOUNT=4 Then SPEED=0
+    If FOURCOUNT=5 Then SPEED=1
+    If FOURCOUNT=6 Then SPEED=1
+    If FOURCOUNT=7 Then SPEED=1
+Return 
+GEAR_3:
+    If FOURCOUNT=0 Then SPEED=0
+    If FOURCOUNT=1 Then SPEED=1
+    If FOURCOUNT=2 Then SPEED=1
+    If FOURCOUNT=3 Then SPEED=0
+    If FOURCOUNT=4 Then SPEED=1
+    If FOURCOUNT=5 Then SPEED=1
+    If FOURCOUNT=6 Then SPEED=0
+    If FOURCOUNT=7 Then SPEED=1
+Return 
+GEAR_4:
+    If FOURCOUNT=0 Then SPEED=0
+    If FOURCOUNT=1 Then SPEED=1
+    If FOURCOUNT=2 Then SPEED=0
+    If FOURCOUNT=3 Then SPEED=1
+    If FOURCOUNT=4 Then SPEED=0
+    If FOURCOUNT=5 Then SPEED=1
+    If FOURCOUNT=6 Then SPEED=0
+    If FOURCOUNT=7 Then SPEED=1
+Return 
+GEAR_5:
+    If FOURCOUNT=0 Then SPEED=0
+    If FOURCOUNT=1 Then SPEED=1
+    If FOURCOUNT=2 Then SPEED=0
+    If FOURCOUNT=3 Then SPEED=0
+    If FOURCOUNT=4 Then SPEED=1
+    If FOURCOUNT=5 Then SPEED=0
+    If FOURCOUNT=6 Then SPEED=0
+    If FOURCOUNT=7 Then SPEED=1
+Return 
+GEAR_6:
+    If FOURCOUNT=0 Then SPEED=0
+    If FOURCOUNT=1 Then SPEED=1
+    If FOURCOUNT=2 Then SPEED=0
+    If FOURCOUNT=3 Then SPEED=0
+    If FOURCOUNT=4 Then SPEED=0
+    If FOURCOUNT=5 Then SPEED=1
+    If FOURCOUNT=6 Then SPEED=0
+    If FOURCOUNT=7 Then SPEED=0
+Return 
+GEAR_7:
+    If FOURCOUNT=0 Then SPEED=1
+    If FOURCOUNT=1 Then SPEED=0
+    If FOURCOUNT=2 Then SPEED=0
+    If FOURCOUNT=3 Then SPEED=0
+    If FOURCOUNT=4 Then SPEED=0
+    If FOURCOUNT=5 Then SPEED=0
+    If FOURCOUNT=6 Then SPEED=0
+    If FOURCOUNT=7 Then SPEED=0
+Return 
+GEAR_8:
+    If FOURCOUNT=0 Then SPEED=0
+    If FOURCOUNT=1 Then SPEED=0
+    If FOURCOUNT=2 Then SPEED=0
+    If FOURCOUNT=3 Then SPEED=0
+    If FOURCOUNT=4 Then SPEED=0
+    If FOURCOUNT=5 Then SPEED=0
+    If FOURCOUNT=6 Then SPEED=0
+    If FOURCOUNT=7 Then SPEED=0
+Return 
+
+' ============ joystick /input stuff 
+JSTUFF:
+
+   REALBRAKE=BRAKETIME
+
+   'If SPEED=1
+    '   If MXCOUNT=MXSPEED and TURBOCOUNT=0
+    '        Dec HOLDCOUNT2
+    '  End If  
+   'End If  
+
+If TURBOCOUNT=0 and Btst(0,INPPY)=True Then TURBOCOUNT=10
+
+
+' LEFT/RIGHT CONTROLLER SENSITIVITY one method...
+
+' rem--- we could use this for tyre wear. 10 is unplayable , 8 very difficult
+' zero turns within its own circle 
+' 1 is good 5 is very stiff ... 2 turns very quickly(??) ... 4 is actually nice  
+
+   SENSITIVE=1
+
+'If Btst(4,INPPY)=True 
+'   SENSITIVE=1
+'End If  
+
+' rem.... we only do this with player 0 ??!? 
+
+If(Btst(2,INPPY) or Btst(3,INPPY)) and PLYMODE>0
+   TRIGHOLD=TRIGHOLD-1
+   If TRIGHOLD<>0 : Bclr 2,INPPY : Bclr 3,INPPY : End If 
+   If TRIGHOLD<=0 : TRIGHOLD=SENSITIVE+1 : End If 
+
+Else If Btst(2,INPPY)=False and Btst(3,INPPY)=False and PLYMODE>0
+  TRIGHOLD=SENSITIVE+1
+End If 
+
+
+' turning without fire 
+If Btst(4,INPPY)=False
+
+End If 
+
+
+If TURNHOLD<1 and SPEED>-1
+   If Btst(2,INPPY)=True
+       PLYZ=PLYZ-1
+       TURNHOLD=TURNCIRCLE
+   End If 
+   If Btst(3,INPPY)=True
+      TURNHOLD=TURNCIRCLE
+      PLYZ=PLYZ+1
+   End If 
+Else 
+   TURNHOLD=TURNHOLD-1
+End If 
+
+
+   If PLYZ=0 Then PLYZ=16
+   If PLYZ=17 Then PLYZ=1
+   MOVE=False
+
+   ' accellerate
+   If Btst(4,INPPY)=True
+         If LIGHTTIMER>0
+             JUMPSTART=True
+             CURRENTFLAG=7
+         End If 
+         If HOLDCOUNT=0 : Rem --- skip to first gear for instant start 
+            HOLDCOUNT=4
+            Rem HOLDCOUNT=1
+         End If 
+         HOLDCOUNT=HOLDCOUNT+ACCELLERATION
+         MXCOUNT=MXCOUNT+1
+   ' brake! 
+   Else 
+       HOLDCOUNT=HOLDCOUNT-REALBRAKE
+       MXCOUNT=MXCOUNT-1
+   End If 
+
+   If HOLDCOUNT<0 Then HOLDCOUNT=0
+   If HOLDCOUNT2<0 Then HOLDCOUNT2=0
+   If HOLDCOUNT>0 Then HOLDCOUNT2=HOLDCOUNT2+1
+
+   'If MXCOUNT<0 Then MXCOUNT=0 
+   'If MXCOUNT>MXSPEED Then MXCOUNT=0 
+Return 
+
+LOOKDATA:
+      GOTDATA= Fn _MAPDATA : Rem        -------- get the byte       
+      BITSHIFT=PLYX-((PLYX/4)*4) : Rem       --------- calculate which bits 
+      GOTDATA=Lsl(GOTDATA,BITSHIFT*2) : Rem   -- bit-shift it
+      RESULT=0-(Btst(7,GOTDATA)*2)-Btst(6,GOTDATA) : Rem -- derive the result 
+Return 
+
+MOVECAR:
+
+   If HOLDCOUNT2>SPEED
+      HOLDCOUNT2=1
+      FOURCOUNT=FOURCOUNT+1
+      If FOURCOUNT>7 : FOURCOUNT=0 : End If 
+   Else 
+      Return 
+   End If 
+
+   TEMP=MASTERCOUNT/8
+   TEMP2=TEMP*8
+   If MASTERCOUNT=TEMP2 : EXTRA=1 : Else : EXTRA=0 : End If 
+  '  do X's only 
+   OLDX=PLYX
+   OLDY=PLYY
+     If PLYZ=1 : Rem  - N   
+        PLYX=PLYX
+Else If PLYZ=2 : Rem  - NNE 
+        PLYX=PLYX+1
+Else If PLYZ=3 : Rem  - NE  
+        PLYX=PLYX+2
+Else If PLYZ=4 : Rem  - ENE   
+        PLYX=PLYX+2 : Rem 3
+Else If PLYZ=5 : Rem  - E 
+        PLYX=PLYX+2-EXTRA : Rem 3
+Else If PLYZ=6 : Rem  - ESE 
+        PLYX=PLYX+2 : Rem 3
+Else If PLYZ=7 : Rem  - SE
+        PLYX=PLYX+2
+Else If PLYZ=8 : Rem  - SSE 
+        PLYX=PLYX+1
+Else If PLYZ=9 : Rem  - S 
+        PLYX=PLYX
+Else If PLYZ=10 : Rem - SSW
+        PLYX=PLYX-1
+Else If PLYZ=11 : Rem - SW 
+        PLYX=PLYX-2
+Else If PLYZ=12 : Rem - WSW
+        PLYX=PLYX-2 : Rem 3
+Else If PLYZ=13 : Rem - W  
+        PLYX=PLYX-2-EXTRA : Rem 3
+Else If PLYZ=14 : Rem - WNW
+        PLYX=PLYX-2 : Rem 3
+Else If PLYZ=15 : Rem - NW 
+        PLYX=PLYX-2
+Else If PLYZ=16 : Rem  - NNW 
+        PLYX=PLYX-1
+  End If 
+   Gosub LOOKDATA
+
+   AUTOROTATE=False
+
+EDX:
+   ' HIT SOMETHING X
+
+   Rem If RESULT<>1 Then     XOLDMOVE=0 
+
+   XOLDMOVE=RESULT
+   If RESULT=1
+      XOLDMOVE=1
+      PLYX=OLDX
+
+
+      If HOLDCOUNT>100 and PLYMODE>0
+             Gosub _WALL_ROTATE
+             HOLDCOUNT=100
+
+     Else If HOLDCOUNT>100 and PLYMODE=0
+             HOLDCOUNT=100
+             Gosub _WALL_ROTATE_AI
+             Gosub _WALL_ROTATE
+       End If 
+
+
+   ' ======= UP 
+   '       If(PLYZ>0 and PLYZ<5) or(PLYZ>13 and PLYZ<17)
+   '          PLYY=PLYY-1 
+   '
+   '' ======= DOWN    
+   '   Else If PLYZ>5 and PLYZ<13 
+   '         PLYY=PLYY+1
+   '   End If 
+
+   End If 
+
+'======= DO Y CHECKS 
+' ==== do y checks 
+     If PLYZ=1 : Rem  - N   
+        PLYY=PLYY-2-EXTRA : Rem 3
+Else If PLYZ=2 : Rem  - NNE 
+        PLYY=PLYY-2 : Rem3 
+Else If PLYZ=3 : Rem  - NE  
+        PLYY=PLYY-2
+Else If PLYZ=4 : Rem  - ENE   
+        PLYY=PLYY-1
+Else If PLYZ=5 : Rem  - E 
+        PLYY=PLYY-0
+Else If PLYZ=6 : Rem  - ESE 
+        PLYY=PLYY+1
+Else If PLYZ=7 : Rem  - SE
+        PLYY=PLYY+2
+Else If PLYZ=8 : Rem  - SSE 
+        PLYY=PLYY+2 : Rem 3
+Else If PLYZ=9 : Rem  - S 
+        PLYY=PLYY+2+EXTRA : Rem 3
+Else If PLYZ=10 : Rem - SSW
+        PLYY=PLYY+2 : Rem 3
+Else If PLYZ=11 : Rem - SW 
+        PLYY=PLYY+2
+Else If PLYZ=12 : Rem - WSW
+        PLYY=PLYY+1
+Else If PLYZ=13 : Rem - W  
+        PLYY=PLYY
+Else If PLYZ=14 : Rem - WNW
+        PLYY=PLYY-1
+Else If PLYZ=15 : Rem - NW 
+        PLYY=PLYY-2
+Else If PLYZ=16 : Rem  - NNW 
+        PLYY=PLYY-2 : Rem 3
+  End If 
+  XRESULT=RESULT
+  Gosub LOOKDATA : 
+
+EDY:
+ Rem  If RESULT<>1 Then YOLDMOVE=0
+   YOLDMOVE=RESULT
+   If RESULT=1
+      YOLDMOVE=1
+       PLYY=OLDY
+
+       If HOLDCOUNT>100 and PLYMODE>0
+              Gosub _WALL_ROTATE
+              HOLDCOUNT=100
+
+       Else If HOLDCOUNT>100 and PLYMODE=0
+              Gosub _WALL_ROTATE_AI
+              Gosub _WALL_ROTATE
+              HOLDCOUNT=100
+
+       End If 
+
+   ' ======= left 
+   '       If(PLYZ>9 and PLYZ<17) and XRESULT<>1
+   '          PLYX=PLYX-1 
+
+   '' ======= right   
+   '   Else If PLYZ>1 and PLYZ<9 and XRESULT<>1 
+    '        PLYX=PLYX+1 
+    '  End If  
+
+   End If 
+
+BRDERS:
+' ----- do border checks   
+Rem Screen 0 : Ink 5 : Bar 174,78 To 207,107 
+   If PLYY<BOUND_U : PLYY=BOUND_U : Gosub _WALL_ROTATE : YOLDMOVE=4 : End If : Rem upper
+   If PLYX<BOUND_L : PLYX=BOUND_L : Gosub _WALL_ROTATE : XOLDMOVE=4 : End If : Rem left 
+   If PLYY>BOUND_B : PLYY=BOUND_B : Gosub _WALL_ROTATE : YOLDMOVE=4 : End If : Rem right
+   If PLYX>BOUND_R : PLYX=BOUND_R : Gosub _WALL_ROTATE : XOLDMOVE=4 : End If : Rem lower
+
+XOVR:
+   If CROSSOVER_DIR=0 : Rem ---- up/down 
+      FIRST_TEST=UNDERPASS
+      SECOND_TEST=OVERPASS
+   Else : Rem --- left/right 
+      FIRST_TEST=OVERPASS
+      SECOND_TEST=UNDERPASS
+   End If 
+   If FIRST_TEST=True and PLYX<CROSSOVER_BOUND_L Then PLYX=CROSSOVER_BOUND_L
+   If FIRST_TEST=True and PLYX>CROSSOVER_BOUND_R Then PLYX=CROSSOVER_BOUND_R
+   If SECOND_TEST=True and PLYY<CROSSOVER_BOUND_U Then PLYY=CROSSOVER_BOUND_U
+   If SECOND_TEST=True and PLYY>CROSSOVER_BOUND_B Then PLYY=CROSSOVER_BOUND_B
+
+MOVMENT:
+
+' this is for the AI 
+   If(XOLDMOVE=1 or XOLDMOVE=4) and(YOLDMOVE=1 or YOLDMOVE=4)
+      Inc NOMOVE : If NOMOVE>255 : NOMOVE=255 : End If 
+      AIDELAY=0
+   Else 
+      NOMOVE=0
+   End If 
+
+'-------  slow down area 
+SLOWZONE=0
+
+If YOLDMOVE>1 or XOLDMOVE>1 Then CURRENTFLAG=5
+If(YOLDMOVE>0 and YOLDMOVE<4) or(XOLDMOVE>0 and YOLDMOVE<4)
+   SLOWZONE=1
+End If 
+
+If INPITS<>0 Then SLOWZONE=1
+
+
+' damage 
+
+
+
+'----- finally do the mvement counter
+  Rem TENCOUNT=0-REALHIGHSPEED 
+
+
+   AUTOROTATE=False
+
+Return 
+
+_WALL_ROTATE_AI:
+
+'    If AUTOROTATE=True : Return : End If  
+' if plymoden<>0 : return : endif
+
+' i'm not sure this works
+
+Return 
+     If PLYZ=1 : PLYY=PLYY+2 : PLYX=PLYX+0
+Else If PLYZ=2 : PLYY=PLYY+1 : PLYX=PLYX-1
+Else If PLYZ=3 : PLYY=PLYY+1 : PLYX=PLYX-1
+Else If PLYZ=4 : PLYY=PLYY+1 : PLYX=PLYX-1
+Else If PLYZ=5 : PLYY=PLYY+0 : PLYX=PLYX-2
+Else If PLYZ=6 : PLYY=PLYY-1 : PLYX=PLYX-1
+Else If PLYZ=7 : PLYY=PLYY-1 : PLYX=PLYX-1
+Else If PLYZ=8 : PLYY=PLYY-1 : PLYX=PLYX-1
+Else If PLYZ=9 : PLYY=PLYY-2 : PLYX=PLYX+0
+Else If PLYZ=10 : PLYY=PLYY-1 : PLYX=PLYX+1
+Else If PLYZ=11 : PLYY=PLYY-1 : PLYX=PLYX+1
+Else If PLYZ=12 : PLYY=PLYY-1 : PLYX=PLYX+1
+Else If PLYZ=13 : PLYY=PLYY+0 : PLYX=PLYX+2
+Else If PLYZ=14 : PLYY=PLYY+1 : PLYX=PLYX+1
+Else If PLYZ=15 : PLYY=PLYY+1 : PLYX=PLYX+1
+Else If PLYZ=16 : PLYY=PLYY+1 : PLYX=PLYX+1
+ End If 
+
+
+Return 
+
+_WALL_ROTATE:
+    If AUTOROTATE=True : Return : End If 
+
+  ' we are at plyx / plyy
+
+
+  If PLYMODE>0
+  ' our target marker is...  
+    TMPTARGX=CHKMIDX(TARGETZONE)
+    TMPTARGY=CHKMIDY(TARGETZONE)
+  Else 
+    TMPTARGX=REALTARGX
+    TMPTARGY=REALTARGY
+
+  '   AITARGET 
+  '   REALTARGZ= Fn _AIPOINTZ  
+  '   TARGZ= Fn _AIPOINTZ  
+  '   TARGZ=REALTARGZ
+  '    Goto AI_SKIP  
+  End If 
+
+
+  ' we need to determine the target Z (rotation) 
+
+      TEMPX=((TMPTARGX*10)-(PLYX*10))
+      TEMPY=(TMPTARGY-PLYY)
+
+   ' Text 20,90,"tx:"+Lzstr$(TEMPX,7) 
+   ' Text 20,100,"ty:"+Lzstr$(TEMPY,7)
+
+     If TEMPY=0 : TEMPY=1 : End If 
+
+     ' normal 
+
+    'If TEMPY=0
+    '  TEMPZ=TEMPY/TEMPX 
+    'Else  
+      TEMPZ=TEMPX/TEMPY : Rem -- this one for sure 
+    'End If  
+
+
+  '  Text 20,110,"tz:"+Lzstr$(TEMPZ,7) 
+
+   '  
+
+      If PLYX<TMPTARGX
+
+ Rem Bell 
+           If TEMPZ>39 : TARGZ=5
+      Else If TEMPZ>15 : TARGZ=6
+      Else If TEMPZ>7 : TARGZ=7
+      Else If TEMPZ>1 : TARGZ=8
+     Else If TEMPZ=0 : TARGZ=9 : Rem Stop 
+      Else If TEMPZ<0 : TARGZ=1
+      Else If TEMPZ<-1 : TARGZ=2
+      Else If TEMPZ<-7 : TARGZ=3
+      Else If TEMPZ<-15 : TARGZ=4
+      Else If TEMPZ<-39 : TARGZ=5
+
+      Else If TEMPZ=0 and TEMPY<0 : TARGZ=1
+      Else If TEMPZ=0 and TEMPY>0 : TARGZ=9 : Stop 
+      Else If TEMPZ=0 : Stop 
+       End If 
+
+       Else If PLYX>TMPTARGX
+
+  Rem Boom 
+            If TEMPZ>39 : TARGZ=13
+       Else If TEMPZ>15 : TARGZ=14
+       Else If TEMPZ>7 : TARGZ=15
+       Else If TEMPZ>1 : TARGZ=16
+       Else If TEMPZ>0 : TARGZ=1
+      Else If TEMPZ=0 : TARGZ=9 : Rem Stop 
+       Else If TEMPZ<-1 : TARGZ=10
+       Else If TEMPZ<-7 : TARGZ=11
+       Else If TEMPZ<-15 : TARGZ=12
+       Else If TEMPZ<-39 : TARGZ=13
+
+         Else If TEMPZ=0 and TEMPY<0 : TARGZ=1
+         Else If TEMPZ=0 and TEMPY>0 : TARGZ=9 : Stop 
+
+       Else If TEMPZ=0 : Stop 
+       Else 
+       End If 
+    End If 
+
+ ' we've set targZ , now see if we must auto-rotate 
+
+  '    Text 20,10,"  zone targ:"+Lzstr$(TARGETZONE,3)
+  '    Text 20,20,"rotate targ:"+Lzstr$(TARGZ,3) 
+'
+ '    Text TMPTARGX,TMPTARGY,"X"
+
+ Rem   TMPTARGX=CHKMIDX(TARGETZONE) 
+ Rem   TMPTARGY=CHKMIDY(TARGETZONE) 
+
+   ' we will force-rotate one step clockwise or anti-clockwise
+
+
+AI_SKIP:
+       TEMPZ=TARGZ-PLYZ
+
+    If TEMPZ=0 : Rem - no rotation needed (unlikely!
+        AUTOROTATE=False
+        Return 
+
+    Else If Abs(TEMPZ)=8 : Rem - 180 rotation needed (depending on circuit direction
+        PLYZ=PLYZ+1
+   Else If TEMPZ>0 and TEMPZ<8 : Rem - rotation clockwise   
+        PLYZ=PLYZ+1
+   Else If TEMPZ<0 and TEMPZ>-8 : Rem - rotation anti clockwise  
+        PLYZ=PLYZ-1
+   Else If TEMPZ>0 and TEMPZ>8 : Rem - rotation anti clockwise  
+        PLYZ=PLYZ-1
+   Else If TEMPZ<0 and TEMPZ<-8 : Rem - rotation clockwise 
+        PLYZ=PLYZ+1
+   Else 
+         Stop 
+   End If 
+
+        AUTOROTATE=True
+
+  ' complete the cirucle 
+        If PLYZ>16 : PLYZ=1 : End If 
+        If PLYZ<1 : PLYZ=16 : End If 
+
+Return 
+
+
+_WALL_ROTATE_OLD:
+
+  ' we are at plyx / plyy
+
+  ' our target marker is...  
+      Text 20,20,"note here"
+
+TMPTARGX=CHKMIDX(TARGETZONE)
+TMPTARGY=CHKMIDY(TARGETZONE)
+
+
+Rem Return 
+
+      TEMPX=((TMPTARGX*10)-(PLYX*10))
+      TEMPY=(TMPTARGY-PLYY)
+
+      If TEMPY=0 : TEMPY=1 : End If 
+      TEMPZ=TEMPX/TEMPY
+
+      Text 20,40,Lzstr$(TEMPZ,3)
+
+      If PLYX<TMPTARGX
+ '          If TARGZ<>0 
+ Rem Bell 
+           If TEMPZ>39 : TARGZ=5
+      Else If TEMPZ>15 : TARGZ=6
+      Else If TEMPZ>7 : TARGZ=7
+      Else If TEMPZ>1 : TARGZ=8
+      Else If TEMPZ>0 : TARGZ=9
+      Else If TEMPZ<0 : TARGZ=1
+      Else If TEMPZ<-1 : TARGZ=2
+      Else If TEMPZ<-7 : TARGZ=3
+      Else If TEMPZ<-15 : TARGZ=4
+      Else If TEMPZ<-39 : TARGZ=5
+      Else If TEMPZ=0 and TEMPY<0 : TARGZ=1
+      Else If TEMPZ=0 and TEMPY>0 : TARGZ=9
+      Else If TEMPZ=0 : Stop 
+       End If 
+
+       Else If PLYX>TMPTARGX
+
+  Rem Boom 
+ '          If TARGZ<>0 
+            If TEMPZ>39 : TARGZ=13
+       Else If TEMPZ>15 : TARGZ=14
+       Else If TEMPZ>7 : TARGZ=15
+       Else If TEMPZ>1 : TARGZ=16
+       Else If TEMPZ>0 : TARGZ=1
+       Else If TEMPZ<0 : TARGZ=9
+       Else If TEMPZ<-1 : TARGZ=10
+       Else If TEMPZ<-7 : TARGZ=11
+       Else If TEMPZ<-15 : TARGZ=12
+       Else If TEMPZ<-39 : TARGZ=13
+       Else If TEMPZ=0 and TEMPY<0 : TARGZ=1
+       Else If TEMPZ=0 and TEMPY>0 : TARGZ=9
+       Else If TEMPZ=0 : Stop 
+       Else 
+       End If 
+    End If 
+
+ ' we've set targZ , now see if we must auto-rotate 
+
+ '       Rem  Screen 0 : If PLY=1 : Text 20,60,Lzstr$(TARGZ,3) : End If 
+ '     End If 
+
+
+   If PLYZ=TARGZ
+         Bclr 2,INPPY2
+         Bclr 3,INPPY2
+         Return 
+   End If 
+
+      TEMP_TARGZ=TARGZ
+      TEMP_TARGZ=TEMP_TARGZ-PLYZ
+      If TEMP_TARGZ<0 Then TEMP_TARGZ=TEMP_TARGZ+16
+
+           If TEMP_TARGZ=0
+             Bclr 2,INPPY2
+             Bclr 3,INPPY2
+
+      Else If TEMP_TARGZ=8
+             Bset 3,INPPY2
+
+      Else If TEMP_TARGZ>8
+            Bset 2,INPPY2
+
+      Else 
+            Bset 3,INPPY2
+      End If 
+
+Return 
+
+_DRAW_ZONES:
+
+
+Screen 0 : Reserve Zone 35
+For N=0 To 31
+   If CHKPOINTW(N)<>0 and CHKPOINTH(N)<>0
+      _TOPLX=CHKPOINTX(N)
+      _TOPLY=CHKPOINTY(N)
+      _TOPRX=_TOPLX+CHKPOINTW(N)
+      _TOPRY=_TOPLY
+      _BOTLX=_TOPLX
+      _BOTLY=_TOPLY+CHKPOINTH(N)
+      _BOTRX=_TOPRX
+      _BOTRY=_BOTLY
+     ' Turbo Draw _TOPLX,_TOPLY To _TOPRX,_TOPRY,5
+     ' Turbo Draw _TOPLX,_TOPLY To _BOTLX,_BOTLY,5
+     ' Turbo Draw _TOPRX,_TOPRY To _BOTRX,_BOTRY,5
+     ' Turbo Draw _BOTLX,_BOTLY To _BOTRX,_BOTRY,5
+
+       CHKMIDX(N)=_TOPLX+(CHKPOINTW(N)/2)
+       CHKMIDY(N)=_TOPRY+(CHKPOINTH(N)/2)
+
+   Rem Ink 3,5 : Text CHKMIDX(N),CHKMIDY(N),"X" 
+
+      Set Zone N+1,_TOPLX,_TOPLY To _BOTRX,_BOTRY
+      End If 
+   Next 
+Rem - zone 33 = invisible  / cross over
+
+Screen 0
+If CROSS_ZONEW<>0 and CROSS_ZONEH<>0
+    Set Zone 33,INVISI_ZONEX,INVISI_ZONEY To INVISI_ZONEX+INVISI_ZONEW,INVISI_ZONEY+INVISI_ZONEH
+End If 
+'    Set Zone 33,174,64 To 207,120 
+
+
+Rem - zone 34 = pits 
+
+     Set Zone 34,PITS_ZONEX,PITS_ZONEY To PITS_ZONEX+PITS_ZONEW,PITS_ZONEY+PITS_ZONEH
+ Rem Bar PITS_ZONEX,PITS_ZONEY To PITS_ZONEX+PITS_ZONEW,PITS_ZONEY+PITS_ZONEH 
+
+
+
+Return 
+LAP_GRAPHICS:
+   Screen 2
+   Paste Bob LAPX+1,LAPY+1,ICONSTART+(40*PLY)+LAPCOUNT+(160)
+   Screen 0
+   Paste Bob LAPX+1,LAPY+1,ICONSTART+(40*PLY)+LAPCOUNT
+Return 
+
+GRAPHICS:
+
+Rem (1066) 
+If UNDERPASS=True
+       Sprite(PLY+1)*2,X Hard(PLYX),Y Hard(PLYY),(CAR_SPRITES*4)+CARSTART
+Else 
+       Sprite(PLY+1)*2,X Hard(PLYX),Y Hard(PLYY),PLYZ-1+(PLY*CAR_SPRITES)+CARSTART+(ROTATE*16)
+End If 
+Return 
+
+
+REFRESH:
+
+   If STRT=False : Timer=0 : STRT=True : End If 
+
+   If Cpu>68000
+
+      While Timer<1
+            Blitter Wait 
+      Wend 
+      STRT=False
+
+ '  Else  
+ '    While VCOUNT<DELAYSPEED 
+ '        VCOUNT=VCOUNT+1 
+ '        Blitter Wait  
+ '     Wend 
+ '    VCOUNT=0
+   End If 
+
+
+       Sprite Update 
+
+Return 
+PLY_SFX:
+   If Length(20)<$20 Then Return 
+   Pt Sam Play V,SFX
+
+Return 
+
+CLEAR_TRACK:
+   RACELAPS=1
+   CHKPOINTS=0
+   AIPOINTS=0
+    For B=0 To 31
+         CHKPOINTX(B)=0
+         CHKPOINTY(B)=0
+         CHKPOINTW(B)=0
+         CHKPOINTH(B)=0
+      Next 
+   CARPLACEN=0 : CARPITSN=0
+   For B=0 To 3
+      CARPLACEX(B)=0
+      CARPLACEY(B)=0
+      CARPITSX(B)=0
+      CARPITSY(B)=0
+      LAPZONEX(B)=0
+      LAPZONEY(B)=0
+    Next 
+Return 
+IMPORT_TRACK:
+' clear data!
+   Gosub CLEAR_TRACK
+   Reserve As Work 4,256
+   If Exist(_CIRCUITLOAD$+"locations.data")=True
+      Wload _CIRCUITLOAD$+"locations.data",4
+   Else 
+      Return 
+   End If 
+' get some header data 
+   COUNTRY_NUMBER=Peek(Start(4))
+   RACE_NAME$=""
+   For N=1 To 255
+      A=Peek(Start(4)+N)
+      If A=0 : Exit 
+      Else 
+      RACE_NAME$=RACE_NAME$+Chr$(A)
+      End If 
+   Next 
+   M=N+1
+   RACE_VENUE$=""
+   For N=M To M+255
+      A=Peek(Start(4)+N)
+      If A=0 : Exit 
+      Else : RACE_VENUE$=RACE_VENUE$+Chr$(A)
+      End If 
+   Next 
+   M=N+1
+   CARPLACEN=Peek(Start(4)+M) : M=M+1
+   For O=0 To 3
+      CARPLACEX(O)=Deek(Start(4)+M+0)
+      CARPLACEY(O)=Deek(Start(4)+M+2)
+      M=M+4
+   Next 
+   M=M+1
+   CARPITSN=Peek(Start(4)+M) : M=M+1
+   For O=0 To 3
+      CARPITSX(O)=Deek(Start(4)+M+0)
+      CARPITSY(O)=Deek(Start(4)+M+2)
+      M=M+4
+   Next 
+   M=M+1
+   PITS_ZONEX=Deek(Start(4)+M) : M=M+2
+   PITS_ZONEY=Deek(Start(4)+M) : M=M+2
+   PITS_ZONEW=Peek(Start(4)+M) : M=M+1
+   PITS_ZONEH=Peek(Start(4)+M) : M=M+1
+   M=M+1
+   If M+1>Length(4) Then Goto SKIP : 
+      Rem Stop 
+      RACE_LAPS=Peek(Start(4)+M) : M=M+1
+      CHKPOINTS=Peek(Start(4)+M) : M=M+1
+   If M>Length(4) Then Goto SKIP : 
+   If CHKPOINTS>0
+    For B=1 To CHKPOINTS
+         If M>Length(4) : Exit : End If 
+         CHKPOINTX(B-1)=Deek(Start(4)+M) : M=M+2
+         CHKPOINTY(B-1)=Deek(Start(4)+M) : M=M+2
+         CHKPOINTW(B-1)=Peek(Start(4)+M) : M=M+1
+         CHKPOINTH(B-1)=Peek(Start(4)+M) : M=M+1
+    Next B
+   End If 
+   If M+1>Length(4) Then Goto SKIP : 
+   For O=0 To 3
+   LAPZONEX(O)=Peek(Start(4)+M) : M=M+1
+   LAPZONEY(O)=Peek(Start(4)+M) : M=M+1
+   Rem Print LAPZONEX(O)
+   Rem Wait Key 
+   Next 
+   M=M+1
+   If M>Length(4) Then Goto SKIP : 
+      CROSS_ZONEX=Peek(Start(4)+M) : M=M+1
+      CROSS_ZONEY=Peek(Start(4)+M) : M=M+1
+      CROSS_ZONEW=Peek(Start(4)+M) : M=M+1
+      CROSS_ZONEH=Peek(Start(4)+M) : M=M+1
+   If M>Length(4) Then Goto SKIP : 
+      INVISI_ZONEX=Peek(Start(4)+M) : M=M+1
+      INVISI_ZONEY=Peek(Start(4)+M) : M=M+1
+      INVISI_ZONEW=Peek(Start(4)+M) : M=M+1
+      INVISI_ZONEH=Peek(Start(4)+M) : M=M+1
+      CROSSOVER_DIR=Peek(Start(4)+M) : M=M+1
+      CROSSOVER_ZONE_FIRST=Peek(Start(4)+M) : M=M+1
+      CROSSOVER_ZONE_LAST=Peek(Start(4)+M) : M=M+1
+   M=M+1
+   If M>Length(4) Then Goto SKIP : 
+
+     AIPOINTS=Peek(Start(4)+M) : M=M+1
+   If AIPOINTS>0
+      For B=1 To AIPOINTS
+         If M>Length(4) : Exit : End If 
+         AIPOINTX(B-1)=Deek(Start(4)+M) : M=M+2
+         AIPOINTY(B-1)=Deek(Start(4)+M) : M=M+2
+         AIPOINTZ(B-1)=Peek(Start(4)+M) : M=M+1
+      Next B
+   End If 
+   M=M+1
+
+
+SKIP:
+'Global AIPOINTS 
+'Dim AIPOINTW(31),AIPOINTH(31) 
+'Global AIPOINTX(),AIPOINTY()
+Erase 4
+Return 
+
+'-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+'        PROCEDURES START HERE 
+'-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+Procedure _RUNSTART
+
+'Screen Open 0,320,256,16,Lowres 
+
+Shared RACECOUNT,GAMEDATASIZE,PLCOM(),_TEAM_STATS$()
+
+   RACECOUNT=0
+
+   Reserve As Work 10,GAMEDATASIZE*4
+   Bank Name 10,"PlyrData"
+   Bank Temporary 10
+
+' rem ..  0 =    1= engine/tyres   2=body/pits   3=doms / ?? 
+'     ... 4 =    remaining tokens
+' we'll start this stuff at 70 
+
+Rem Print GAMESEASON$
+' we this will clear / set some variables. 
+  For ZZZ=0 To 3
+
+      PLCOM(ZZZ)=0
+      'Print _TEAM_STATS$(ZZZ) 
+
+    ' this gets the data for the base team stats 
+      For XXX=1 To 6 Step 2
+         TEMP1$=Mid$(_TEAM_STATS$(ZZZ),XXX+1,1)
+         TEMP2$=Mid$(_TEAM_STATS$(ZZZ),XXX+2,1)
+
+     ' =============
+     '    Print Hex$(Asc(TEMP1$)) 
+     '    Print Hex$(Asc(TEMP2$)) 
+
+          Poke Start(10)+(GAMEDATASIZE*ZZZ)+70+((XXX-1)/2),Asc(TEMP1$)*$10+Asc(TEMP2$)
+
+        ' =============
+
+          TEMP3$=Peek$(Start(10)+(GAMEDATASIZE*ZZZ)+70+((XXX-1)/2),1)
+
+          ' Print Hex$(Asc(TEMP3$),2)
+
+        '  Print Hex$(Mid$(Peek(Start(10)+)  
+        '  Print Hex$(Peek(Start(10)+(GAMEDATASIZE*zzz)+70+XXX),2) 
+      Next 
+
+    ' driver 1 / driver 2 skill  
+    Poke Start(10)+(GAMEDATASIZE*ZZZ)+73,_SKILL((ZZZ*2)+0)
+    Poke Start(10)+(GAMEDATASIZE*ZZZ)+74,_SKILL((ZZZ*2)+1)
+
+    ' development tokens 
+    Poke Start(10)+(GAMEDATASIZE*ZZZ)+75,0
+
+    ' lives (arcade mode)
+    Poke Start(10)+(GAMEDATASIZE*ZZZ)+76,3
+
+    ' game points? 
+
+
+   ' Print Hex$(Peek(Start(10)+(GAMEDATASIZE*ZZZ)+73),2)
+   ' Print Hex$(Peek(Start(10)+(GAMEDATASIZE*ZZZ)+74),2)
+
+   Next 
+
+
+'View  
+'Wait Key  
+'Stop  
+'Screen Close 0
+
+End Proc
+
+Procedure _GARAGEICONS
+
+Shared GICONSTART
+Load Iff GAMEDRIVE$+"Graphics/outgame2.iff",1
+Screen Hide 1
+
+
+' this is grabbing our bubble icons
+
+COUNT=GICONSTART
+
+For QQQ=0 To 4
+  INX=1+(QQQ*36)+QQQ
+  OUTX=INX+36
+  INY=1
+  OUTY=33
+  Get Bob 1,COUNT,INX,INY To OUTX,OUTY
+  Rem Bar INX,INY To OUTX-1,OUTY-1 
+ Inc COUNT
+Next QQQ
+
+For QQQ=0 To 3
+  INX=1+(QQQ*16)+QQQ
+  OUTX=INX+16
+  INY=34
+  OUTY=INY+16
+
+  Get Bob 1,COUNT,INX,INY To OUTX,OUTY
+  Rem Bar INX,INY To OUTX-1,OUTY-1 
+ Inc COUNT
+
+Next 
+
+' we should do the other non-car icons here too. 
+
+OTHERS:
+
+  COUNT=1067
+
+' ==  disks
+  WIDTH=16
+  HEIGHT=16
+
+  _OFFSETX=1
+  _OFFSETY=51
+   For B=0 To 2
+   For A=0 To 2
+      INX=_OFFSETX+(A*HEIGHT)+A
+      INY=_OFFSETY+(B*WIDTH)+B
+      OUTX=INX+WIDTH
+      OUTY=INY+HEIGHT
+
+      Get Bob COUNT,INX,INY To OUTX,OUTY
+      Hot Spot COUNT,$11
+
+      COUNT=COUNT+1
+   '   Bar INX,INY To OUTX-1,OUTY-1 
+   '   Wait Key : View  
+   Next A
+   Next B
+   COUNT=COUNT-1
+
+
+
+' ==  little men 
+
+  _OFFSETX=52
+
+
+   For B=0 To 2
+   For A=0 To 2
+      INX=_OFFSETX+(A*HEIGHT)+A
+      INY=_OFFSETY+(B*WIDTH)+B
+      OUTX=INX+WIDTH
+      OUTY=INY+HEIGHT
+      Get Bob COUNT,INX,INY To OUTX,OUTY
+      Hot Spot COUNT,$11
+
+      COUNT=COUNT+1
+   '   Bar INX,INY To OUTX-1,OUTY-1 
+   '   Wait Key : View  
+   Next 
+   Next 
+
+ COUNT=COUNT-1
+
+' ==  COINS (GOLD) 
+
+  _OFFSETX=103
+
+   For C=0 To 1
+   For B=0 To 2
+   For A=0 To 2
+      INX=_OFFSETX+(A*HEIGHT)+A+(C*51)
+      INY=_OFFSETY+(B*WIDTH)+B
+      OUTX=INX+WIDTH
+      OUTY=INY+HEIGHT
+      Get Bob COUNT,INX,INY To OUTX,OUTY
+      Hot Spot COUNT,$11
+
+      COUNT=COUNT+1
+   '   Bar INX,INY To OUTX-1,OUTY-1 
+   '   Wait Key : View  
+   Next A
+   Next B
+   Next 
+   COUNT=COUNT-1
+
+
+' Locate 0,30 : Print COUNT : View 
+' Wait Key 
+' Stop 
+
+
+
+End Proc
+Procedure _GETCAR
+Auto View Off 
+
+ If Exist(SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".cars")
+   Load Iff SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".cars",1
+ End If 
+
+   Rem --- View 
+
+    CAR_SPRITES=16*4
+    Gosub _GRABCAR
+
+   Ink 0
+   ' make a blank 
+   INX=300
+   INY=240
+   OUTX=INX+16
+   OUTY=INY+16
+   Bar 320-16,240-16 To 320,240
+   Get Bob COUNT,INX,INY To OUTX,OUTY
+   COUNT=COUNT+1
+
+Rem Screen Show 1 : Screen Offset 1,0,100 : View : Screen 1
+
+   Screen Close 1
+Pop Proc
+
+
+_GRABCAR:
+   COUNT=CARSTART
+   COUNTSTART=COUNT
+   HEIGHT=16
+   WIDTH=16
+
+'   _OFFSETX=1 
+'   _OFFSETY=1 
+'   INX=_OFFSETX 
+'   INY=_OFFSETY 
+
+Ink 14
+Wait Vbl 
+'For C=0 To 3
+
+   Rem C=(GRAPH-1) mod 6
+
+   Rem ROW=(GRAPH-1)/6
+   _OFFSETX=1+(C*51)
+   _OFFSETY=1+(ROW*(17*3))
+
+_OFFSETY=1
+_OFFSETX=1
+
+For D=0 To 3 : Rem --- all 4 cars 
+
+For C=0 To 3 : Rem --- 9x9 boxes (column blocks)
+
+For B=0 To 2 : Rem --- 3 tall 
+For A=0 To 2 : Rem --- 3 wide 
+
+   INX=_OFFSETX+(A*WIDTH)+A+((C*WIDTH*3)+(C*3))
+   INY=_OFFSETY+(B*HEIGHT)+B+((D*HEIGHT*3)+(D*3))
+   OUTX=INX+WIDTH
+   OUTY=INY+HEIGHT
+   Get Bob COUNT,INX,INY To OUTX,OUTY
+
+   Rem    Text 270,150,Lzstr$(COUNT,5)
+   Rem    Wait Key  
+   COUNT=COUNT+1
+
+'   Bar INX,INY To OUTX-1,OUTY-1 
+
+Next A
+Next B
+
+COUNT=COUNT-1
+
+For B=2 To 0 Step -1 : Rem --- 3 tall (rvs) 
+For A=2 To 0 Step -1 : Rem --- 3 wide (rvs) 
+   INX=_OFFSETX+(A*WIDTH)+A+((C*WIDTH*3)+(C*3))
+   INY=_OFFSETY+(B*HEIGHT)+B+((D*HEIGHT*3)+(D*3))
+   OUTX=INX+WIDTH
+   OUTY=INY+HEIGHT
+   Get Bob COUNT,INX,INY To OUTX,OUTY
+
+   Ink 0
+   Bar INX,INY To OUTX-1,OUTY-1
+   Paste Bob INX,INY,Hrev(COUNT)
+
+   Get Bob COUNT,INX,INY To OUTX,OUTY
+
+   Rem Text 270,150,Lzstr$(COUNT,5) 
+   Rem Bar INX,INY To OUTX-1,OUTY-1 
+
+   COUNT=COUNT+1
+
+
+Rem Wait Key 
+
+Next A
+Next B
+
+COUNT=COUNT-1
+
+
+Next C
+Next D
+
+
+
+For A=COUNTSTART To COUNT-1
+  Hot Spot A,$11
+Next A
+Return 
+
+
+End Proc
+Procedure _GETICONS
+Auto View Off 
+Load Iff GAMEDRIVE$+"Graphics/ingame.iff",1
+' 12 x 6 numbers 
+' 40 of them 
+' big icon 
+' little bar 
+
+COUNT=ICONSTART
+
+
+For A=1 To 2
+For B=0 To 3
+   WID=12 : HEI=6
+   For X=0 To 3
+    For Y=0 To 9
+       INX=(X*WID)+((WID*4)*B)
+       INY=(Y*HEI)+(A*HEI*10)
+       OUTX=INX+WID
+       OUTY=INY+HEI
+       Get Bob 1,COUNT,INX,INY To OUTX,OUTY
+       ' Bar INX,INY To OUTX-1,OUTY-1 
+       COUNT=COUNT+1
+   Next 
+   Next 
+Next 
+Next 
+
+'============= FLAGS 
+XOFF=192
+YOFF=0
+B=0
+For A=1 To 2
+   WID=16 : HEI=16
+   NUWID=12 : NUHEI=8
+   For X=0 To 1
+    For Y=0 To 3
+       INX=(X*WID)+((WID*4)*B)+XOFF
+       INY=(Y*HEI)+(A*HEI*4)+YOFF
+       OUTX=INX+NUWID
+       OUTY=INY+NUHEI
+       Get Bob 1,COUNT,INX,INY To OUTX,OUTY
+       Rem Bar INX,INY To OUTX-1,OUTY-1 
+    COUNT=COUNT+1
+    Next 
+   Next 
+Next 
+
+Screen Close 1
+Pop Proc
+
+Wait Key 
+' =========== THE BARS 
+INY=INY+HEI
+SAVY=INY
+For A=0 To 1
+   WID=16 : HEI=12
+   INX=0 : INY=INY+(HEI*A)
+   OUTX=INX+WID : OUTY=INY+HEI
+   Get Bob 1,COUNT,INX,INY To OUTX,OUTY
+       Bar INX,INY To OUTX-1,OUTY-1
+Wait Key 
+   COUNT=COUNT+1
+Next A
+INY=SAVY
+For A=0 To 1
+   WID=32 : HEI=6
+   INX=0 : INY=INY+(HEI*A)
+   OUTX=INX+WID : OUTY=INY+HEI
+       Bar INX,INY To OUTX-1,OUTY-1
+   COUNT=COUNT+1
+Wait Key 
+Next A
+Wait Key 
+
+Screen Close 1
+End Proc
+
+
+
+Procedure _GETFONT
+Auto View Off 
+' get icons and stuff  
+   Screen Open 6,320,1023,32,Lowres : Curs Off : Hide 
+   Load Iff "graphics/CHARSET2.IFF",6 : Rem Screen Hide 6
+
+'get FONT
+   COUNT=1
+   For PY=0 To 14
+    For PX=0 To 15
+
+      INX=PX*16 : INY=PY*8
+     OUTX=INX+10 : OUTY=INY+8
+
+     Get Bob 6,COUNT,INX,INY To OUTX,OUTY
+     Inc COUNT
+    Next PX
+   Next PY
+'get FONT
+   For PY=15 To 15+14
+    For PX=0 To 15
+      INX=PX*16 : INY=PY*8
+     OUTX=INX+10 : OUTY=INY+8
+     Get Bob 6,COUNT,INX,INY To OUTX,OUTY
+     Inc COUNT
+    Next PX
+   Next PY
+
+Rem   Make Icon Mask 
+   Screen Close 6
+End Proc
+
+Procedure _GETSEASON
+
+Rem _TEAM$(),_ENGINE$(),_DRIVER$() 
+
+
+If Exist(SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".data")
+   Wload SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".data",9
+
+Else 
+   Reserve As Work 9,32
+End If 
+
+' this should all be a lot easier now... lets see
+
+
+Rem Screen Open 0,320,200,16,Lowres
+
+TEMP$=Peek$(Start(9),Length(9))
+
+GAMESEASON$=Replacestr$(Itemstr$(TEMP$,0,Chr$($FF)),Chr$(FF) To "")
+
+Dim _TEAM_CONT(3)
+
+BLCKN=8
+
+For LL=0 To 3
+  _TEAM$(LL)=Replacestr$(Itemstr$(TEMP$,1+(BLCKN*LL),Chr$($FF)),Chr$(FF) To "")
+  _ENGINE$(LL)=Replacestr$(Itemstr$(TEMP$,2+(BLCKN*LL),Chr$($FF)),Chr$(FF) To "")
+
+ Rem ===== this is if we ever introduce the 
+
+  '_PRINCIPAL$(LL)=Itemstr$(TEMP$,3+(blckn*LL),Chr$($FF))
+  '_PRINCIPAL_GFX(LL)=Asc(Left$(_PRINCIPAL$(LL),1))
+  '_PRINCIPAL$(LL)=Right$(Itemstr$(TEMP$,3+(blckn*LL),Chr$($FF)),Len(_PRINCIPAL$(LL))-1))
+
+ '_TEAM_STATS$(LL)=Replacestr$(Itemstr$(TEMP$,4+(BLCKN*LL),Chr$($FF)),Chr$(FF) To "") 
+  _TEAM_STATS$(LL)=Itemstr$(TEMP$,4+(BLCKN*LL),Chr$($FF))
+
+   ' from this we get, country and engine, grip, body, pits, doms 
+
+  _DRIVER$((LL*2)+0)=Itemstr$(TEMP$,5+(BLCKN*LL),Chr$($FF))
+  _DRIVER$((LL*2)+1)=Itemstr$(TEMP$,7+(BLCKN*LL),Chr$($FF))
+
+ For QQ=0 To 1
+    DSTATS$=Itemstr$(TEMP$,6+(QQ*2)+(BLCKN*LL),Chr$($FF))
+
+   _GRAF((LL*2)+QQ)=Asc(Mid$(DSTATS$,1,1))
+   _CONT((LL*2)+QQ)=Asc(Mid$(DSTATS$,2,1))
+   _SKILL((LL*2)+QQ)=Asc(Mid$(DSTATS$,3,1))
+ Next 
+
+Next 
+
+'=== playlist is next
+
+SEASON_RACES=Asc(Replacestr$(Itemstr$(TEMP$,33,Chr$($FF)),Chr$($FF) To ""))
+
+SEASON_PLAYLIST$=Itemstr$(TEMP$,34,Chr$($FF))
+SEASON_PLAYLIST$=Replacestr$(SEASON_PLAYLIST$,Chr$($FF) To "")
+
+Bank Name 9,"SeasonData"
+
+
+'Print SEASON_PLAYLIST$
+'Wait Key  
+
+End Proc
+
+Procedure UNPACPIC[INNAME$,SCRNUMB]
+
+Auto View Off 
+If Exist(INNAME$+".pac")
+   Wload INNAME$+".pac",19
+   Unpack 19 To SCRNUMB
+   Erase 19
+
+Else If Exist(INNAME$+".iff")
+
+   Load Iff INNAME$+".iff",SCRNUMB
+' have a try at graphics/ folder 
+' both .pac
+' and .iff 
+
+Else If Exist(Replacestr$(INNAME$,SEASONDRIVE$+FILESEASON$ To "graphics")+".pac")
+
+   INNAME$=Replacestr$(INNAME$,SEASONDRIVE$+FILESEASON$ To "graphics")
+   Wload INNAME$+".pac",19
+   Unpack 19 To SCRNUMB
+   Erase 19
+
+Else If Exist(Replacestr$(INNAME$,SEASONDRIVE$+FILESEASON$ To "graphics")+".iff")
+
+   INNAME$=Replacestr$(INNAME$,SEASONDRIVE$+FILESEASON$ To "graphics")
+   Load Iff INNAME$+".iff",SCRNUMB
+
+Else 
+
+   Screen Open 1,640,200,16,Hires : Screen Show 1 : Print : Print 
+
+   Print "File: "+INNAME$+".iff/.pac"+" is missing."
+   Print INNAME$
+   View 
+   Wait Key : End 
+
+End If 
+End Proc
+Procedure _RUN_COMMS[PLYA]
+  Randomize Timer
+
+' skip out if comms are off anyway 
+   If COMMS_ON=False : Pop Proc : End If 
+
+' we shouldnt run this if no races have happened  (backup) 
+   If RACECOUNT=0 : Pop Proc : End If 
+
+  ' every plya gets a decreas since their last go  
+    If PLCOM(PLYA)>0
+       Dec PLCOM(PLYA)
+    End If 
+
+  ' limit us to one player comms per turn  
+    If ANYCOMM=True : Pop Proc : End If 
+
+  PICKED=True
+  COUNT=0
+
+ ' randomiser 
+  If Rnd(4)<2 : PICKED=False : End If 
+
+ ' oops, you alreeady had a go
+  If PLCOM(PLYA)>0 : PICKED=False : End If 
+
+
+  If PICKED=False : Pop Proc : End If 
+
+
+' ------- RUN A COMMUNICATION SCENARIO 
+      ANYCOMM=False
+      PLCOM(PLYA)=1
+      SCENARIO=Rnd(7)+1
+
+           If SCENARIO<3 : SCENARIO=1
+      Else If SCENARIO<5 : SCENARIO=2
+      Else If SCENARIO<7 : SCENARIO=3
+      Else If SCENARIO<9 : SCENARIO=5
+       Else : SCENARIO=2
+       End If 
+
+      Rem SCENARIO=8 
+
+
+      '
+      ' pick a 'rival' for scenario 7 (team mate) and scenario 8 (rival) 
+      If SCENARIO=8
+         ' find a rival 
+           Repeat 
+              RIVAL=Rnd(3)
+           Until RIVAL<>PLYA
+
+           CHAR$=PLYR_NAMES$(RIVAL)
+           CHAR_GRAF=PLYR_GRAF(RIVAL)
+
+      Else If SCENARIO=7
+       ' find a teammate
+        RIVAL=-1
+        Repeat 
+           Inc RIVAL
+        Until _DRIVER$(RIVAL)=PLYR_NAMES$(PLYA)
+        If Odd(RIVAL) : RIVAL=RIVAL-1 : Else : RIVAL=RIVAL+1 : End If 
+
+        CHAR$=_DRIVER$(RIVAL)
+        CHAR_GRAF=_GRAF(RIVAL)
+       End If 
+
+
+     _COMMS[PLYA,SCENARIO,CHAR_GRAF,CHAR$,_TEAM$(PLYA),PLYR_NAMES$(PLYA)]
+
+
+  Rem Next 
+
+Rem Screen To Front 0
+Rem View 
+
+
+End Proc
+Procedure _TITLES
+
+Shared GAMEVERSION$
+   For PLY=0 To 3
+      PLYR_SCORE(PLY)=0
+   Next 
+
+' get the user name....
+Screen Close 0
+If Exist(GAMEDRIVE$+"data/datablock")
+   Wload GAMEDRIVE$+"data/datablock",12
+   TEMPNAME$=Peek$(Start(12),Length(12))
+   Erase 12
+   For Z=Len(TEMPNAME$) To 1 Step -1
+      REGNAME$=REGNAME$+Chr$((255-Asc(Mid$(TEMPNAME$,Z,1)))-$78)
+   Next 
+Else 
+   End 
+End If 
+' get the available champsionshops 
+Dim CHAMPS$(256)
+
+
+Dim Z(32)
+Dim PALSTORE(31)
+Auto View Off 
+' ====== 
+Track Load "sfx/music.mod",17 : Pt Volume 64 : Pt Play 17 : Wait 10
+
+     Erase 1
+     Load "graphics/titles.abk"
+
+
+   _GETFONT
+   _GETCAR
+
+Auto View Off 
+UNPACPIC["graphics/titlebkg",2] : Double Buffer 
+Rem Autoback 0 : Wait Vbl  
+
+
+Screen Open 4,320,240,32,Lowres : Screen Hide 4
+Get Palette 2 : Colour 0,0 : Cls 0
+Screen To Back 4 : Flash Off 
+Screen 2
+
+Rem Screen Display 4,,24,320,240 
+'Screen Copy 2,0,0,320,240 To 4,0,0
+
+Screen Display 2,,64,320,228
+ Screen 2
+ Pal Get Screen 2,2
+
+For A=0 To 31
+   PALSTORE(A)=Pal Get(2,A)
+Next A
+
+Gosub _SPRITE_PALETTE
+
+Palette 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Auto View Off 
+Bob Update Off 
+
+Rem --- BODGE-IT CODE!!
+A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+A=0
+View : Wait Vbl 
+Rem Screen To Front 2 : Screen Show 2 : Wait Vbl : View  
+Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+
+
+
+Wait 5
+Rem Hot Spot 1,0,0 
+' intro animation
+Update Off 
+
+Wait 50
+'   AB=0 
+ '  Repeat  
+'   Wait Vbl : Inc AB
+'   Until AB>150 or Fire(0)<>0 or Fire(1)<>0 or Ext Fire(0)<>0 or Ext Fire(1)<>0 
+
+   _WAIT_ACTIVE_PLAYER[200,-1]
+
+
+_DRAW_BOBS:
+
+
+' first pass 
+   BOFFSET1=503 : BOFFSET2=505 : BOFFSET3=504 : BOFFSET4=506
+
+
+' fade out the central picture 
+   For CNT=1 To 1
+ '     FF=Mix Colour(FF,0) : EE=Mix Colour(EE,0)
+ '     DD=Mix Colour(DD,0) : CC=Mix Colour(CC,0)
+ '     BB=Mix Colour(BB,0) : AA=Mix Colour(AA,0)
+ '     Z=Mix Colour(Z,0) : X=Mix Colour(X,0)
+ '     Y=Mix Colour(Y,0) : W=Mix Colour(W,0)
+ '     U=Mix Colour(U,0) : V=Mix Colour(V,0)
+ '     S=Mix Colour(S,0) : T=Mix Colour(T,0)
+ '     Q=Mix Colour(Q,0) : R=Mix Colour(R,0)
+
+     Rem M=$FFF 
+
+      P=Mix Colour(P,0) : O=Mix Colour(O,0)
+      M=Mix Colour(M,0)
+                          N=Mix Colour(N,0)
+      K=Mix Colour(K,0) : L=Mix Colour(L,0)
+      I=Mix Colour(I,0) : J=Mix Colour(J,0)
+
+      G=Mix Colour(G,0) : H=Mix Colour(H,0)
+      E=Mix Colour(E,0) : F=Mix Colour(F,0)
+      C=Mix Colour(C,0) : D=Mix Colour(D,0)
+      A=Mix Colour(A,0) : B=Mix Colour(B,0)
+
+      K=$444 : L=$EFF
+   Next 
+   Wait Vbl 
+
+
+
+MYCOL:
+Rem   Flash 6,"(6EF,3)(5CF,3)(4AF,3)(38F,3)(26F,3)(14F,3)(02F,3)(17F,3)(28F,3)(39F,3)(4AF,3)(5BF,3)(6CF,3)"
+
+   REG$="(6EF,3)(5CF,3)(4AF,3)(38F,3)(26F,3)(14F,3)(02F,3)(14F,3)(26F,3)(38F,3)(4AF,3)(5CF,3)(6EF,3)"
+   Flash 6,REG$
+   LD$="(F00,2)(FF0,2)(0F0,2)(0FF,2)(00F,2)(F0F,2)(FFF,2)"
+
+
+
+Rem "(6EF,3)(5CF,3)(4AF,3)(38F,3)(26F,3)(14F,3)(02F,3)(14F,3)(26F,3)(38F,3)(4AF,3)(5CF,3)(6EF,3)"
+   SELECTION=1
+
+    MYUPDATE=True
+
+
+' menu loop
+
+    HEAD=0
+'    Fade 3,,,,,,,,,,,,,,,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF : Wait 20
+     Fade 3,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,,,,,,,,,,, : Rem  ,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF : Wait 20
+
+
+   Wait Vbl : Screen Copy 2 To 4 : Wait Vbl 
+Rem  Palette ,,,,,,,,,,,,,,,,$0,$0,$444,$777,$BBB,$FFF,$B40,$721,$F00,$E91,$FF0,$C0,$60,$8F,$4F,$18
+
+
+   PAGE=0
+
+   Every 1 Gosub _CAR_SPIN
+
+
+TITLELOOP:
+
+
+ ' ensures all inputs are clear 
+   Repeat : Wait Vbl 
+   Until Fire(0)=False and Fire(1)=False and Ext Fire(0)=False and Ext Fire(1)=False
+
+   NEWPAGE=False
+   If PAGE=0 : BOFFSET5=507 : End If 
+   If PAGE=1 : BOFFSET5=508 : End If 
+   If PAGE=2 : BOFFSET5=510 : End If 
+   If PAGE=3 : BOFFSET5=509 : End If 
+   Gosub _DRAW_HEADER_ON : MYUPDATE=True
+   SELECTION=0
+
+
+   Repeat 
+
+                      CHEK=1 : Gosub _GET_INPPY
+         If INPPY=0 : CHEK=5 : Gosub _GET_INPPY : End If 
+
+      If MYUPDATE=True : Gosub _DO_UPDATE : End If 
+
+   ' page 0 
+      For N=0 To 3
+
+       'CHEK=PLMODEN(N) : If CHEK<>0 and CHEK<>5 : Gosub _GET_INPPY : End If  
+
+       If PAGE=0 and PLMODEN(N)=1 and Fire(1)=True Then Exit 2
+       If PAGE=0 and PLMODEN(N)=2 and Fire(0)=True Then Exit 2
+       If PAGE=0 and PLMODEN(N)=3 and Ext Fire(0)=True Then Exit 2
+       If PAGE=0 and PLMODEN(N)=4 and Ext Fire(1)=True Then Exit 2
+       If PAGE=0 and PLMODEN(N)=5 and Key State($60)=True Then Exit 2
+   '   If PAGE=0 and PLMODEN(N)>=1 and PLMODEN(N)<=5 and Btst(4,INPPY) Then Exit 2
+
+      Next 
+
+      If Btst(3,INPPY) : Inc PAGE : NEWPAGE=True : Exit : End If 
+      If Btst(2,INPPY) : Dec PAGE : NEWPAGE=True : Exit : End If 
+    ' page 1 
+      If PAGE=1
+        If Even(SELECTION)=False and Btst(4,INPPY)
+         N=SELECTION/2
+            PL=PLMODEN(N)
+RETRY:
+
+            Inc PL
+            For M=0 To 3
+              If PLMODEN(M)=PL and PL<>0 : Rem -- already used this port
+              Goto RETRY : Rem ... terrible naughty GOTO code 
+              End If 
+            Next 
+            If PL>5 : PL=-1 : End If 
+            PLMODEN(N)=PL
+            MYUPDATE=True
+
+       ' change the driver
+       Else If Even(SELECTION)=True and Btst(4,INPPY)
+
+               NN=(SELECTION/2)
+               Bchg NN,PLYR_MEMBERS
+               MM=Btst(NN,PLYR_MEMBERS)
+
+                  PLYR_NAMES$(NN)=_DRIVER$((NN*2)-MM)
+                  PLYR_GRAF(NN)=_GRAF((NN*2)-MM)
+                  PLYR_CONT(NN)=_CONT((NN*2)-MM)
+                  PLYR_SKILL(NN)=_SKILL((NN*2)-MM)
+
+            MYUPDATE=True
+
+       Else If Btst(0,INPPY)
+            Dec SELECTION
+            MYUPDATE=True
+
+       Else If Btst(1,INPPY)
+            Inc SELECTION
+            MYUPDATE=True
+       End If 
+
+       ' cars spinning
+       Every On 
+
+
+       If SELECTION<0 : SELECTION=7 : Else If SELECTION>7 : SELECTION=0 : End If 
+      End If 
+
+    ' page 2 
+      If PAGE=2
+
+       If Btst(4,INPPY) and SELECTION=1
+            CHAMP_MODE=-1-CHAMP_MODE
+            MYUPDATE=True
+
+       Else If Btst(4,INPPY) and SELECTION=2 and CHAMP_MODE=True
+            COMMS_ON=-1-COMMS_ON
+            MYUPDATE=True
+
+       Else If Btst(4,INPPY) and SELECTION=3
+          Rem  Erase All 
+          Rem  Exec("c:run "+GAMEDRIVE$+"TrackEditor.exe") 
+            Erase All : Flash Off : Colour 6,$FFF : Fade 3 : Wait 75
+            End 
+
+       Else If Btst(4,INPPY) and SELECTION=0
+
+              Randomize Timer
+              BLAH=BLAH+1 : If BLAH>2 : BLAH=0 : End If 
+                 If BLAH=0 : GAMESEASON$="The One Prize 2018" : FILESEASON$="TOP_2018"
+            Else If BLAH=1 : GAMESEASON$="The One Prize 2009" : FILESEASON$="TOP_2009"
+            Else If BLAH=2 : GAMESEASON$="The One Prize 1992" : FILESEASON$="TOP_1992"
+      '      Else If BLAH=3 : GAMESEASON$="The One Prize 2009" : FILESEASON$="TOP_1986"  
+      '      Else If BLAH=4 : GAMESEASON$="The One Prize 2017" : FILESEASON$="TOP2017" 
+            Else : BLAH=0 : GAMESEASON$="The One Prize 2018" : FILESEASON$="TOP1992"
+            End If 
+
+             Flash 6,LD$
+            _GETSEASON
+            _GETCAR
+             Gosub _SPRITE_PALETTE
+             Flash 6,REG$
+
+
+         For N=0 To 3
+             PLYR_NAMES$(N)=_DRIVER$((N*2))
+             PLYR_GRAF(N)=_GRAF((N*2))
+
+         Next 
+         MYUPDATE=True
+
+       Else If Btst(0,INPPY)
+            Dec SELECTION
+            MYUPDATE=True
+
+       Else If Btst(1,INPPY)
+            Inc SELECTION
+            MYUPDATE=True
+
+        End If 
+
+
+      If SELECTION<0 : SELECTION=3 : Else If SELECTION>3 : SELECTION=0 : End If 
+      End If 
+
+   Until 1=0
+   Gosub _DRAW_HEADER_OFF
+
+   If PAGE>2 : PAGE=0 : Else If PAGE<0 : PAGE=2 : End If 
+   If NEWPAGE=True Then Goto TITLELOOP
+
+Screen Close 4
+Flash Off 
+Fade 3,,,,,,,,,,,,,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+Wait 2 : Fade 2
+For N=64 To 0 Step -1 : Pt Volume N : Wait 1 : Next 
+Pt Stop : Wait 10 : Screen Close 2 : Pt Volume 64
+Erase 17
+
+Every Off 
+Pop Proc
+
+
+_SPRITE_PALETTE:
+
+
+' top half 
+If Exist(SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".palette")
+   Wload SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".palette",13
+   For ZZ=0 To 15
+      PALSTORE(ZZ+16)=Deek(Start(13)+(ZZ*2))
+      Colour ZZ+16,PALSTORE(ZZ+16)
+   Next 
+   Erase 13
+
+
+Else 
+   ' Default Palette
+   PALSTORE(16)=0 : PALSTORE(17)=0 : PALSTORE(18)=$444 : PALSTORE(19)=$777
+   PALSTORE(20)=$BBB : PALSTORE(21)=$FFF : PALSTORE(22)=$B40 : PALSTORE(23)=$721
+   PALSTORE(24)=$F00 : PALSTORE(25)=$E91 : PALSTORE(26)=$FF0 : PALSTORE(27)=$C0
+   PALSTORE(28)=$60 : PALSTORE(29)=$8F : PALSTORE(30)=$4F : PALSTORE(31)=$18
+End If 
+
+Return 
+
+_CAR_SPIN:
+If PAGE<>1 Then Return 
+Rem Bell 
+       ' cars spin
+       For CAR=0 To 3
+            Sprite CAR*2,X Hard(60),Y Hard(96+(30*CAR)),CARSTART+(CAR*CAR_SPRITES)+SPIN
+            Wait Vbl : Sprite Update 
+       Next 
+
+      Inc SPIN
+      If SPIN=16 : SPIN=0 : End If 
+
+Return 
+_DO_UPDATE:
+
+   Autoback 0
+   Screen Copy 4 To Logic(2)
+   Bob Clear 
+   If PAGE<>1 : Sprite Off : Sprite Update : End If 
+
+   If PAGE=0
+      ACTIVE=False
+      MYTEXT$="This Demo is issued to "
+      MYX=20 : MYY=212-16 : MYDELAY=0 : MYZ=15
+      Gosub SMALLTYPE
+      MYTEXT$=REGNAME$
+      MYX=20+8 : MYY=212 : MYDELAY=0 : MYZ=15
+      Gosub SMALLTYPE
+
+      Rem MYTEXT$=GAMEVERSION$ 
+
+      MYTEXT$=Left$(Right$(GAMEVERSION$,Len(GAMEVERSION$)-5),Len(GAMEVERSION$)-6)
+      MYX=320-(6*(Len(MYTEXT$)+1)) : MYY=8 : MYDELAY=0 : MYZ=15
+      Gosub SMALLTYPE
+
+      MYTEXT$="Press Fire to Start"
+      MYX=180 : MYY=212 : MYDELAY=0 : MYZ=15
+      If SELECTION=0 : ACTIVE=True : Else : ACTIVE=False : End If 
+      Gosub SMALLTYPE
+      OFFSET5=509
+
+   Else If PAGE=2
+      ACTIVE=False
+
+      MYTEXT$="Championship: "+GAMESEASON$
+      MYX=-1 : MYY=92+(0*30) : MYDELAY=0 : MYZ=15
+      If SELECTION=0 : ACTIVE=True : Else : ACTIVE=False : End If 
+      Gosub SMALLTYPE
+
+      MYTEXT$="Game Mode: "
+      If CHAMP_MODE=True : MYTEXT$=MYTEXT$+"Full Championship" : End If 
+      If CHAMP_MODE=False : MYTEXT$=MYTEXT$+"Arcade game Mode " : End If 
+      MYX=-1 : MYY=92+(1*15) : MYDELAY=0 : MYZ=15
+      If SELECTION=1 : ACTIVE=True : Else : ACTIVE=False : End If 
+      Gosub SMALLTYPE
+
+      MYTEXT$="communication screens: "
+
+   If CHAMP_MODE=True
+      If COMMS_ON=True : MYTEXT$=MYTEXT$+"on " : End If 
+      If COMMS_ON=False : MYTEXT$=MYTEXT$+"off" : End If 
+   Else 
+      MYTEXT$=MYTEXT$+"n/a"
+   End If 
+
+      MYX=-1 : MYY=92+(2*15) : MYDELAY=0 : MYZ=15
+      If SELECTION=2 : ACTIVE=True : Else : ACTIVE=False : End If 
+      Gosub SMALLTYPE
+
+
+ ' If Exist("TrackEditor.exe")
+      MYTEXT$="Exit game"
+      MYX=-1 : MYY=92+(8*15) : MYDELAY=0 : MYZ=15
+      If SELECTION=3 : ACTIVE=True : Else : ACTIVE=False : End If 
+      Gosub SMALLTYPE
+ ' End If 
+
+      OFFSET5=510
+
+   Else If PAGE=1
+      For N=0 To 3
+       If N=0 : MYTEXT$="RED TEAM    : " : End If 
+       If N=1 : MYTEXT$="BLUE TEAM   : " : End If 
+       If N=2 : MYTEXT$="GREEN TEAM  : " : End If 
+       If N=3 : MYTEXT$="YELLOW TEAM : " : End If 
+         PL=PLMODEN(N)
+       MYX=90 : MYY=92+(N*30) : MYDELAY=0 : MYZ=15
+       ACTIVE=False
+       Gosub SMALLTYPE
+
+       If PLYR_NAMES$(N)="" : PLYR_NAMES$(N)="DRIVERONE WILLIAMS" : End If 
+       MYTEXT$=PLYR_NAMES$(N)
+       MYX=184 : MYY=92+(N*30) : MYDELAY=0 : MYZ=1
+       If SELECTION=(N*2) : ACTIVE=True : Else : ACTIVE=False : End If 
+       Gosub SMALLTYPE
+
+       MYY=92+(N*30)+10 : MYX=184
+       If PL=0 : MYTEXT$="COMPUTER"
+        Else If PL=1 : MYTEXT$="JOYSTICK PORT"
+        Else If PL=2 : MYTEXT$="MOUSE PORT"
+        Else If PL=3 : MYTEXT$="PARALLEL PORT 1"
+        Else If PL=4 : MYTEXT$="PARALLEL PORT 2"
+        Else If PL=5 : MYTEXT$="KEYBOARD"
+        Else If PL=-1 : MYTEXT$="** DISABLED **"
+       End If 
+       If SELECTION=(N*2)+1 : ACTIVE=True : Else : ACTIVE=False : End If 
+       Gosub SMALLTYPE
+      Next 
+      OFFSET5=510
+
+      For CAR=0 To 3
+
+         Ink 13
+         INX=49 : INY=86+(CAR*30)
+         Z=21 : OUTX=INX+Z : OUTY=INY+Z
+
+         Bar INX,INY To OUTX,OUTY
+         Inc INX : Inc INY
+
+         Ink 0
+         Z=Z-2 : OUTX=INX+Z : OUTY=INY+Z
+         Bar INX,INY To OUTX,OUTY
+
+       Next 
+   End If 
+
+   MYUPDATE=False
+   JUSTTEXT=False
+
+
+   Blitter Wait 
+    Bob 1,2,-146+150,BOFFSET5
+    Bob Draw 
+
+    Rem Bob Update  <<< without BOB update, the final position logo disappeares
+    Blitter Wait 
+    Screen Copy Logic(2) To Physic(2)
+
+   Wait Vbl 
+
+   Repeat 
+     Rem Wait Vbl 
+     Every On 
+
+     For N=0 To 3
+        CHEK=PLMODEN(N) : If CHEK<>0 and CHEK<>1 and CHEK<>4 : Gosub _GET_INPPY : End If 
+     Next 
+
+     CHEK=1 : Gosub _GET_INPPY
+     CHEK=4 : Gosub _GET_INPPY
+
+   Until INPPY=0
+
+'   Until Joy(1)=0 and Ext Joy(0)+Ext Fire(0)=0 and Ext Joy(1)+Ext fire(1)=0 
+Return 
+
+_GET_INPPY:
+
+      If CHEK=0 or CHEK=1 : INPPY=Joy(1) : End If 
+
+      If(CHEK=0 or CHEK=2) and INPPY=0 : INPPY=Joy(0) : End If 
+      If(CHEK=0 or CHEK=3) and INPPY=0 : INPPY=Ext Joy(0)+(Pfire(0)*16) : End If 
+      If(CHEK=0 or CHEK=4) and INPPY=0 : INPPY=Ext Joy(1)+(Pfire(1)*16) : End If 
+
+      If(CHEK=0 or CHEK=5) and INPPY=0 : 
+            If Key State($4C)=True : Bset 0,INPPY : End If 
+            If Key State($4D)=True : Bset 1,INPPY : End If 
+            If Key State($4F)=True : Bset 2,INPPY : End If 
+            If Key State($4E)=True : Bset 3,INPPY : End If 
+            If Key State($60)=True : Bset 4,INPPY : End If 
+      End If 
+
+      CHCK=0
+Return 
+
+_DRAW_HEADER_ON:
+Blitter Wait 
+
+For N=0 To 150
+If N mod 7=0 or N=150
+      Bob 1,(2),(-146+N),BOFFSET5
+      Blitter Wait : Bob Update : Wait Vbl 
+End If 
+Next 
+
+Bob Update : Screen Copy Logic(2) To Physic(2) : Wait Vbl 
+
+Return 
+
+_DRAW_HEADER_OFF:
+ Blitter Wait : Wait Vbl 
+ Sprite Off : Sprite Update 
+
+For N=150 To 0 Step -1
+ If N mod 7=0 or N=0
+     Bob 1,(2),(-146+N),BOFFSET5
+     Blitter Wait : Bob Update : Wait Vbl 
+End If 
+Next 
+
+Screen Copy 4 To Logic(2)
+Screen Copy Logic(2) To Physic(2)
+Return 
+
+
+
+
+SMALLBAR:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPYBAR
+   DIGIT=0
+
+   Ink MYZ
+   Bar MYX-4,MYY-3 To MYX+4+(Len(MYTEXT$)*6),MYY+8
+   Turbo Draw MYX-4,MYY-3 To MYX+4+(Len(MYTEXT$)*6),MYY-3,14-ACTIVE
+   Turbo Draw MYX-4,MYY-3 To MYX-4,MYY+8,14-ACTIVE
+   Turbo Draw MYX+4+(Len(MYTEXT$)*6),MYY-3 To MYX+4+(Len(MYTEXT$)*6),MYY+8,14-ACTIVE
+   Turbo Draw MYX-3,MYY+8 To MYX+4+(Len(MYTEXT$)*6),MYY+8,14-ACTIVE
+   Turbo Draw MYX+5+(Len(MYTEXT$)*6),MYY-2 To MYX+5+(Len(MYTEXT$)*6),MYY+9,1
+   Turbo Draw MYX-3,MYY+9 To MYX+4+(Len(MYTEXT$)*6),MYY+9,1
+
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+     If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR
+     If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+     DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPYBAR:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+
+SMALLTYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY
+   DIGIT=0
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+Rem     Screen Copy 4,MYX+(DIGIT*6),MYY,MYX+(DIGIT*6)+12,MYY+8 To 2,MYX+(DIGIT*6),MYY
+
+' find this
+     If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR-(ACTIVE*112)
+
+     If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+     DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPY:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+
+   Rem Wait Vbl 
+   Blitter Wait 
+Return 
+
+LARGETYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*4)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY2
+   DIGIT=0 : MYTEXT$=Upper$(MYTEXT$)
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31-32+256
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+      Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*112)
+      If MYDELAY>0 Then Wait MYDELAY
+     DESTX=DESTX+10 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPY2:
+   Wait Vbl 
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+End Proc
+Procedure _PLYA2FLSH[PLYA]
+
+ ' get the colour flash 
+
+          If PLYA=0 : Rem red
+             FLSH$="(f07,3)(f06,3)(e05,3)(d04,3)(c03,3)(b02,3)(a01,3)(900,3)(a01,3)(b02,3)(c03,3)(d03,3)(e04,3)(f05,3)(f06,3)"
+
+     Else If PLYA=1 : Rem bleu 
+            Rem blue/purp
+              FLSH$="(70f,3)(60f,3)(50e,3)(40d,3)(30c,3)(20b,3)(10a,3)(009,3)(10a,3)(20b,3)(30c,3)(30d,3)(40e,3)(50f,3)(60f,3)"
+            Rem lighter blue/purp
+              FLSH$="(76f,3)(65f,3)(55f,3)(45f,3)(34e,3)(24e,3)(14c,3)(04c,3)(14e,3)(24e,3)(34f,3)(34f,3)(45f,3)(55f,3)(66f,3)"
+
+     Else If PLYA=2
+            Rem green/yellow 
+             FLSH$="(7f0,3)(6f0,3)(5e0,3)(4d0,3)(3c0,3)(2b0,3)(1a0,3)(090,3)(1a0,3)(2b0,3)(3c0,3)(3d0,3)(4e0,3)(5f0,3)(6f0,3)"
+            Rem green/blue 
+             FLSH$="(0f7,3)(0f6,3)(0e5,3)(0d4,3)(0c3,3)(0b2,3)(0a1,3)(090,3)(0a1,3)(0b2,3)(0c3,3)(0d3,3)(0e4,3)(0f5,3)(0f6,3)"
+     Else If PLYA=3 : Rem yellow 
+            FLSH$="(ff7,3)(ff6,3)(ee5,3)(dd4,3)(cc3,3)(bb2,3)(aa1,3)(990,3)(aa1,3)(bb2,3)(cc3,3)(dd3,3)(ee4,3)(ff5,3)(ff6,3)"
+     Else 
+            FLSH$="(fE6,3)(fC5,3)(fA4,3)(f83,3)(f62,3)(f41,3)(f20,3)(14F,3)(19c,3)(1ca,3)(1f8,3)(2cF,3)(3eF,3)(4AF,3)(5CF,3)(6EF,3)"
+     End If 
+
+End Proc[FLSH$]
+
+Procedure _PRE_SCREEN
+
+
+ ' this should be temporary only
+   If Length(1)<1 : _GETFONT : End If 
+
+
+   Shared RACE_NAME$,RACE_VENUE$,TRACK_TYPE,RACE_LAPS,RACECOUNT,COUNTRY_NUMBER
+   Shared TRACKNAME$
+
+   TRACK_TYPE=0
+
+   If Instr(Lower$(TRACKNAME$),"baku")>0 Then TRACK_TYPE=3
+   If Instr(Lower$(TRACKNAME$),"melbourne")>0 Then TRACK_TYPE=1
+   If Instr(Lower$(TRACKNAME$),"montreal")>0 Then TRACK_TYPE=1
+   If Instr(Lower$(TRACKNAME$),"montecarlo")>0 Then TRACK_TYPE=3
+   If Instr(Lower$(TRACKNAME$),"bahrain")>0 Then TRACK_TYPE=3
+   If Instr(Lower$(TRACKNAME$),"singapore")>0 Then TRACK_TYPE=3
+
+        If TRACK_TYPE=0 : TRACKTYPE$="CLASSIC RACE COURSE"
+   Else If TRACK_TYPE=1 : TRACKTYPE$="SEMI-PERMANENT STREET CIRCUIT"
+   Else If TRACK_TYPE=2 : TRACKTYPE$="NIGHT RACE"
+   Else If TRACK_TYPE=3 : TRACKTYPE$="TEMPORARY STREET CIRCUIT"
+   Else If TRACK_TYPE=4 : TRACKTYPE$="OVAL COURSE"
+   Else : TRACKTYPE$=""
+   End If 
+
+Rem `Stop  
+
+
+
+
+   FINDCOUNTRY[COUNTRY_NUMBER]
+   TRACK_COUNTRY$=Param$
+   TRACK_COUNTRY$=Left$(TRACK_COUNTRY$,Len(TRACK_COUNTRY$)-5)
+
+   Dim PALSTORE(31),PALSTORE2(31)
+   HEI=256
+
+ '  _PLYA2FLSH[PLYA]
+ '   FLSH$=Param$ 
+
+
+   Auto View Off 
+   Screen Open 0,320,240,32,Lowres : Curs Off : Hide 
+
+   If Exist("graphics/cards/circuit_"+Lzstr$(TRACK_TYPE,2)+".iff")=True
+      WINPIC$="graphics/cards/circuit_"+Lzstr$(TRACK_TYPE,2)
+   Else 
+      WINPIC$="graphics/cards/circuit_00"
+   End If 
+
+   ' load pic 
+   UNPACPIC[WINPIC$,2]
+
+   Screen 2 : Double Buffer 
+
+   Screen Open 4,320,HEI,32,Lowres : Screen Hide 4
+   Get Palette 2 : Colour 0,0 : Cls 0
+   Screen To Back 4 : Flash Off 
+   Screen 2
+
+   Screen Copy 2,0,0,320,HEI To 4,0,0
+
+   Screen 2
+   Pal Get Screen 2,2
+
+Rem ---- GET TWO VERSIONS OF THE COLOUR PALETTE
+   For A=0 To 31
+      Amcaf Aga Notation Off 
+      PALSTORE(A)=(Pal Get(2,A))
+      PALSTORE2(A)=Rrggbb To Rgb(Pal Get(2,A))
+      Rem PALSTORE2(A)=(Blue Val(Pal Get(2,A))*$1) 
+   Next A
+
+   '        If PLYA=0 : MYCOL=$D14
+   '   Else If PLYA=1 : MYCOL=$1AF
+   '   Else If PLYA=2 : MYCOL=$C4 
+      '   Else If PLYA=3 : MYCOL=$CB0
+   '   Else MYCOL=$BCD
+   '    End If  
+
+   Palette 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Auto View Off 
+   Bob Update Off 
+
+
+   Screen 2
+   Gosub _GETCOLOURFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 75
+
+   _WAIT_ACTIVE_PLAYER[200,-1]
+
+
+
+' do we even want a blue fade? 
+ '  Gosub _GETBLUEFADE :  
+    Gosub _GETLOWCOLOURFADE : 
+    View : Wait Vbl 
+    Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+    Wait 75
+    Flash 6,FLSH$
+
+_DRAWTEXT:
+   Screen 2 : Autoback 0
+
+  ' MYTEXT$=GAMESEASON$+" championship" : Rem +" "+Lzstr$(PLYR_GRAF(WINNER),2) 
+
+   MYTEXT$=RACE_NAME$
+   MYX=-1 : MYY=16 : MYDELAY=0 : Gosub LARGETYPE
+
+   MYTEXT$=RACE_VENUE$+" - "+TRACK_COUNTRY$
+   MYX=-1 : MYY=16+10 : MYDELAY=0 : Gosub SMALLTYPE
+
+   MYTEXT$="ROUND "+(Str$(RACECOUNT+1)-" ")+" of "+(Str$(SEASON_RACES)-" ")
+   MYX=-1 : MYY=16+30 : MYDELAY=0 : Gosub LARGETYPE
+
+   MYTEXT$=TRACKTYPE$
+   MYX=-1 : MYY=16+50 : MYDELAY=0 : Gosub SMALLTYPE
+
+    R_LAPS=RACE_LAPS
+   If CHAMP_MODE=False : R_LAPS=(R_LAPS/3)-1 : End If 
+
+   MYTEXT$=""+Str$(R_LAPS)-" "+" laps "
+   MYX=-1 : MYY=16+60 : MYDELAY=0 : Gosub SMALLTYPE
+
+
+' FOOTER 
+   If CHAMP_MODE=True
+    MYTEXT$="CHAMPIONSHIP MODE"
+   Else 
+    MYTEXT$="ARCADE MODE"
+   End If 
+
+   MYX=-1 : MYY=10+(23*10) : MYDELAY=0 : Gosub SMALLTYPE
+
+
+' Print  
+' Print "Race start" 
+
+' Print "Race count:"+Str$(RACECOUNT)
+
+
+ Rem View 
+
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+
+
+
+Rem Wait Key 
+
+   _WAIT_ACTIVE_PLAYER[0,-1]
+
+Rem : 1256 
+Sprite 0,X Hard(-16),Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+Sprite 2,X Hard(-16),Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+Sprite 4,X Hard(-16),Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+Sprite 6,X Hard(-16),Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+
+Sprite Update : Wait Vbl 
+
+Screen Copy Logic(2) To Physic(2)
+Wait Vbl 
+
+Rem Sprite 0,600,200,1001+(PLYA*16)+SPIN 
+
+Sprite Off 
+Every Off 
+Flash Off 
+
+Fade 1
+Wait 150
+
+
+Screen Close 4 : Wait Vbl 
+Screen Close 2 : Wait Vbl 
+
+Pop Proc
+
+
+
+_GETCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+   A=0
+   L=$FFF
+   Return 
+
+_GETLOWCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+
+      A=Mix Colour(A,0) : B=Mix Colour(B,0)
+      C=Mix Colour(C,0) : D=Mix Colour(D,0)
+      E=Mix Colour(E,0) : F=Mix Colour(F,0)
+      G=Mix Colour(G,0) : H=Mix Colour(H,0)
+      I=Mix Colour(I,0) : J=Mix Colour(J,0)
+      K=Mix Colour(K,0) : L=Mix Colour(L,0)
+      M=Mix Colour(M,0) : N=Mix Colour(N,0)
+      P=Mix Colour(P,0) : O=Mix Colour(O,0)
+
+      Q=Mix Colour(Q,0) : R=Mix Colour(R,0)
+      S=Mix Colour(S,0) : T=Mix Colour(T,0)
+      U=Mix Colour(U,0) : V=Mix Colour(V,0)
+      W=Mix Colour(W,0) : FF=Mix Colour(FF,0)
+
+      X=Mix Colour(X,0) : Y=Mix Colour(Y,0)
+      Z=Mix Colour(Z,0) : AA=Mix Colour(AA,0)
+      BB=Mix Colour(BB,0) : CC=Mix Colour(CC,0)
+      DD=Mix Colour(DD,0) : EE=Mix Colour(EE,0)
+
+
+   A=0
+   L=$FFF
+
+
+   Return 
+
+_GETBLUEFADE:
+   A=PALSTORE2(0) : B=PALSTORE2(1) : C=PALSTORE2(2) : D=PALSTORE2(3)
+   E=PALSTORE2(4) : F=PALSTORE2(5) : G=PALSTORE2(6) : H=PALSTORE2(7)
+   I=PALSTORE2(8) : J=PALSTORE2(9) : K=PALSTORE2(10) : L=PALSTORE2(11)
+   M=PALSTORE2(12) : N=PALSTORE2(13) : O=PALSTORE2(14) : P=PALSTORE2(15)
+   Q=PALSTORE2(16) : R=PALSTORE2(17) : S=PALSTORE2(18) : T=PALSTORE2(19)
+   U=PALSTORE2(20) : V=PALSTORE2(21) : W=PALSTORE2(22) : X=PALSTORE2(23)
+   Y=PALSTORE2(24) : Z=PALSTORE2(25) : AA=PALSTORE2(26) : BB=PALSTORE2(27)
+   CC=PALSTORE2(28) : DD=PALSTORE2(29) : EE=PALSTORE2(30) : FF=PALSTORE2(31)
+   A=0
+Rem      Colour 11,$FFF : Rem - text (regular) 
+   L=$FFF
+
+   Return 
+
+SMALLTYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY
+   DIGIT=0
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+
+Rem >> Screen 0
+
+Rem >>>     If CHAR<>1 Then Paste Bob MYX+(DIGIT*6),MYY,CHAR 
+
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR-(ACTIVE*112)
+      If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+
+Rem >>      View 
+     DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPY:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+
+Return 
+
+LARGETYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*4)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY2
+   DIGIT=0 : MYTEXT$=Upper$(MYTEXT$)
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31-32+256
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+Rem >>     Screen 0
+     If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*112)
+
+ Rem >>    Paste Bob MYX+(DIGIT*8),MYY,CHAR 
+      If MYDELAY>0 Then Wait MYDELAY
+Rem >>      View 
+     DESTX=DESTX+10 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+ SKIPPY2:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+End Proc
+
+
+Procedure _GARAGE[PLYA]
+
+    Shared GICONSTART,GAMEDATASIZE
+
+' import season data (check this, i dont think we want this here)
+'  _GETSEASON  
+
+
+   TEMP1=Peek(Start(10)+(GAMEDATASIZE*PLYA)+70)
+   CULA=TEMP1/$10
+   ENGINE=TEMP1-(CULA*$10)
+
+   TEMP1=Peek(Start(10)+(GAMEDATASIZE*PLYA)+71)
+   TYRES=TEMP1/$10
+   BODY=TEMP1-(TYRES*$10)
+
+   TEMP1=Peek(Start(10)+(GAMEDATASIZE*PLYA)+72)
+   PITS=TEMP1/$10
+   TURBO=TEMP1-(PITS*$10)
+
+   RMTOKENS=Peek(Start(10)+(GAMEDATASIZE*PLYA)+75)
+   LIVES=Peek(Start(10)+(GAMEDATASIZE*PLYA)+76)
+
+
+
+
+  '  token calculator  
+
+   USEDTOKENS=ENGINE+TYRES+BODY+PITS+TURBO
+   ALLTOKENS=(7*5)
+
+  '  Rem === usedtokens=min, alltokens=max   
+  ' ALLTOKENS=Rnd(ALLTOKENS)+USEDTOKENS  
+  ' RMTOKENS=ALLTOKENS-USEDTOKENS
+
+
+   _GETCAR
+   _GETFONT
+   _GARAGEICONS
+
+    Bank Permanent 1
+
+    Dim PALSTORE(31),PALSTORE2(31)
+    HEI=256
+
+ _PLYA2FLSH[PLYA]
+  FLSH$=Param$
+
+
+    CARTEMPX=290 : CARTEMPY=190
+
+
+
+   Auto View Off 
+   Screen Open 0,320,240,32,Lowres : Curs Off : Hide 
+
+   WINPIC$="graphics/cards/garage"
+
+   UNPACPIC[WINPIC$,2]
+
+   Screen 2 : Double Buffer 
+
+   Screen Open 4,320,HEI,32,Lowres : Screen Hide 4
+   Get Palette 2 : Colour 0,0 : Cls 0
+   Screen To Back 4 : Flash Off 
+   Screen 2
+
+   Screen Copy 2,0,0,320,HEI To 4,0,0
+
+   Screen 2
+   Pal Get Screen 2,2
+
+Rem ---- GET TWO VERSIONS OF THE COLOUR PALETTE
+   For A=0 To 31
+      Amcaf Aga Notation Off 
+      PALSTORE(A)=(Pal Get(2,A))
+      PALSTORE2(A)=Rrggbb To Rgb(Pal Get(2,A))
+      Rem PALSTORE2(A)=(Blue Val(Pal Get(2,A))*$1) 
+   Next A
+
+           If PLYA=0 : MYCOL=$D14
+      Else If PLYA=1 : MYCOL=$1AF
+      Else If PLYA=2 : MYCOL=$C4
+      Else If PLYA=3 : MYCOL=$CB0
+      Else MYCOL=$BCD
+       End If 
+
+' === the cars palette ====  
+   If Exist(SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".palette")
+      Wload SEASONDRIVE$+FILESEASON$+"/"+FILESEASON$+".palette",13
+      For NZ=16 To 31
+         PALSTORE(NZ)=Deek(Start(13)+((NZ-16)*2))
+         PALSTORE2(NZ)=Deek(Start(13)+((NZ-16)*2))
+      Next 
+      PALSTORE2(16)=MYCOL
+      Erase 13
+
+   Else 
+      ' Default Palette
+      PALSTORE(16)=MYCOL : PALSTORE(17)=0 : PALSTORE(18)=$444 : PALSTORE(19)=$777
+      PALSTORE(20)=$BBB : PALSTORE(21)=$FFF : PALSTORE(22)=$B40 : PALSTORE(23)=$721
+      PALSTORE(24)=$F00 : PALSTORE(25)=$E91 : PALSTORE(26)=$FF0 : PALSTORE(27)=$C0
+      PALSTORE(28)=$60 : PALSTORE(29)=$8F : PALSTORE(30)=$4F : PALSTORE(31)=$18
+
+      PALSTORE2(16)=MYCOL : PALSTORE2(17)=0 : PALSTORE2(18)=$444 : PALSTORE2(19)=$777
+      PALSTORE2(20)=$BBB : PALSTORE2(21)=$FFF : PALSTORE2(22)=$B40 : PALSTORE2(23)=$721
+      PALSTORE2(24)=$F00 : PALSTORE2(25)=$E91 : PALSTORE2(26)=$FF0 : PALSTORE2(27)=$C0
+      PALSTORE2(28)=$60 : PALSTORE2(29)=$8F : PALSTORE2(30)=$4F : PALSTORE2(31)=$18
+   End If 
+
+   Palette 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Auto View Off 
+   Bob Update Off 
+
+
+   Screen 2
+   Gosub _GETCOLOURFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 75
+
+   _WAIT_ACTIVE_PLAYER[200,-1]
+
+   Gosub _GETBLUEFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 75
+
+   Flash 6,FLSH$
+
+
+Rem    Screen Display 0,,,320,240
+
+SELECTED=0
+
+
+If CHAMP_MODE=True
+   GORACE=7
+   SKIP=GORACE-1
+   SVE=GORACE-2
+Else 
+   GORACE=5
+   SKIP=-1
+   SVE=-1
+End If 
+
+
+
+REDRAW:
+
+' refresh repeat 
+Repeat 
+   Wait Vbl 
+
+Rem Bell 
+   Autoback 0
+
+   Screen Copy 4 To Logic(2)
+   
+   ACTIVE=False
+
+   Screen 2 : Autoback 0
+
+  ' MYTEXT$=GAMESEASON$+" championship" : Rem +" "+Lzstr$(PLYR_GRAF(WINNER),2) 
+   MYTEXT$="PIT LANE - CAR SETUP"
+   MYX=-1 : MYY=16 : MYDELAY=0
+   Gosub LARGETYPE
+
+   MYTEXT$=_TEAM$(PLYA)
+   If _ENGINE$(PLYA)<>_TEAM$(PLYA)
+     MYTEXT$=MYTEXT$+" - "+_ENGINE$(PLYA)
+   End If 
+   MYX=-1 : MYY=MYY+32 : MYDELAY=0
+   Gosub SMALLTYPE
+
+  AROW=200
+ ' rem === the two drivers
+
+   FIRSTNUMB=(PLYA*2)-Btst(PLYA,PLYR_MEMBERS)
+   SECONDNUMB=(PLYA*2)-(-1-Btst(PLYA,PLYR_MEMBERS))
+
+   MYTEXT$="PRIMARY DRIVER: "+_DRIVER$(FIRSTNUMB)
+   MYX=20 : MYY=AROW+(10*3) : MYDELAY=0
+   Gosub SMALLTYPE
+
+   MYTEXT$="RESERVE DRIVER: "+_DRIVER$(SECONDNUMB)
+   MYX=20 : MYY=AROW+(10*4) : MYDELAY=0
+   Gosub SMALLTYPE
+
+   FINDCOUNTRY[_CONT(FIRSTNUMB)]
+   MYTEXT$="("+Right$(Param$,3)+")"
+   MYX=272 : MYY=AROW+(10*3) : MYDELAY=0
+   Gosub SMALLTYPE
+
+   FINDCOUNTRY[_CONT(SECONDNUMB)]
+   MYTEXT$="("+Right$(Param$,3)+")"
+   MYX=272 : MYY=AROW+(10*4) : MYDELAY=0
+   Gosub SMALLTYPE
+
+    AROW=68
+    ACOL=20
+    SPACE=32
+
+
+For ZZ=0 To 4
+
+   If ZZ=0 : MYTEXT$="ENGINE / POWERTRAIN" : TEMP=ENGINE : End If 
+   If ZZ=1 : MYTEXT$="GRIP / TYRE LIFE" : TEMP=TYRES : End If 
+   If ZZ=2 : MYTEXT$="PROTECT BODYWORK" : TEMP=BODY : End If 
+   If ZZ=3 : MYTEXT$="PIT CREW SPEED" : TEMP=PITS : End If 
+   If ZZ=4 : MYTEXT$="D.O.M.S EFFECT" : TEMP=TURBO : End If 
+
+   Rem  MYTEXT$=MYTEXT$+Str$(TEMP) : rem -- display the value of each on the text line
+
+   MYX=ACOL+46 : MYY=(SPACE*ZZ)+AROW : MYDELAY=0
+
+   If SELECTED=ZZ : ACTIVE=True : Else : ACTIVE=False : End If 
+   Gosub SMALLTYPE
+   Paste Bob ACOL,AROW-18+(SPACE*ZZ),GICONSTART+ZZ
+
+
+   For XX=0 To 7
+      If TEMP<XX : SS=2 : Else : SS=0 : End If 
+
+     Rem  If TEMP=XX and SELECTED=ZZ : SS=1 : End If  
+          If SELECTED=ZZ and XX<=TEMP : SS=1 : End If 
+
+       Paste Bob ACOL+40+(XX*14),AROW-18+(SPACE*ZZ),GICONSTART+5+SS
+   Next 
+Next 
+
+ Rem CARTEMPX : INY=CARTEMPY
+
+
+
+' ===== tokens 
+
+   ACTIVE=False
+   AROW=AROW-16
+   MYTEXT$="development tokens"
+   MYX=312-(Len(MYTEXT$)*6) : MYY=AROW+(10*0) : MYDELAY=0
+   Gosub SMALLTYPE
+
+   MYTEXT$="available" : Rem +Str$(RMTOKENS)
+   MYX=312-(Len(MYTEXT$)*6) : MYY=AROW+(10*1) : MYDELAY=0
+   Gosub SMALLTYPE
+
+
+
+   Rem Paste Bob 20,AROW-16,999 
+
+   CAR1=449
+   CARY=70
+   AROW=0
+
+   Every 4 Gosub _CAR_SPIN
+
+
+
+' DRAW BUTTON BOXES  
+
+         If SELECTED=GORACE : Ink 6 : ACTIVE=True : Else : Ink 13 : ACTIVE=False : End If 
+         INX=CARTEMPX : INY=CARTEMPY
+         MYTEXT$="next race"
+         MYX=INX-((Len(MYTEXT$)+1)*6) : MYY=INY+(10*1) : MYDELAY=0
+         Gosub SMALLTYPE
+
+       ' next race
+         ZZ=21 : OUTX=INX+ZZ : OUTY=INY+ZZ
+         Bar INX,INY To OUTX,OUTY : Inc INX : Inc INY
+         Ink 4 : ZZ=ZZ-2 : OUTX=INX+ZZ : OUTY=INY+ZZ
+         Bar INX,INY To OUTX,OUTY
+
+'======= 
+
+   If CHAMP_MODE=True
+
+       ' skip race
+         If SELECTED=SKIP : Ink 6 : ACTIVE=True : Else : Ink 13 : ACTIVE=False : End If 
+         INX=CARTEMPX : INY=CARTEMPY-24
+         MYTEXT$="skip race"
+         MYX=INX-((Len(MYTEXT$)+1)*6) : MYY=INY+(10*1) : MYDELAY=0
+         Gosub SMALLTYPE
+
+         ZZ=21 : OUTX=INX+ZZ : OUTY=INY+ZZ
+         Bar INX,INY To OUTX,OUTY : Inc INX : Inc INY
+         Ink 4 : ZZ=ZZ-2 : OUTX=INX+ZZ : OUTY=INY+ZZ
+         Bar INX,INY To OUTX,OUTY
+
+'======= 
+       ' save game
+
+         If SELECTED=SVE : Ink 6 : ACTIVE=True : Else : Ink 13 : ACTIVE=False : End If 
+         INX=CARTEMPX : INY=CARTEMPY-48
+         MYTEXT$="save game"
+         MYX=INX-((Len(MYTEXT$)+1)*6) : MYY=INY+(10*1) : MYDELAY=0
+         Gosub SMALLTYPE
+
+         Z=21 : OUTX=INX+Z : OUTY=INY+Z
+         Bar INX,INY To OUTX,OUTY : Inc INX : Inc INY
+         Ink 4 : Z=Z-2 : OUTX=INX+Z : OUTY=INY+Z
+         Bar INX,INY To OUTX,OUTY
+
+     End If 
+
+
+     ' draw tokens (rmtokens) 
+
+    YZ=8
+    XZ=5
+
+    For YY=0 To YZ-1
+     For XX=0 To XZ-1
+       If YY*XZ+(XX+1)<=RMTOKENS
+       Paste Bob 264+(XX*8),70+(YY*8),998
+       'Wait Vbl  
+       End If 
+     Next 
+    Next 
+
+
+
+MAINLOOP:
+
+   Blitter Wait 
+   Wait Vbl 
+   Screen Copy Logic(2) To Physic(2)
+   Wait Vbl 
+
+   REFRESH=False
+
+   Gosub _GET_TEMP
+
+   Repeat 
+      Every On 
+
+      ' get inputs 
+           INPPY=0
+        If PLMODEN(PLYA)=1 : INPPY=Joy(1)
+   Else If PLMODEN(PLYA)=2 : INPPY=Joy(0)
+   Else If PLMODEN(PLYA)=3 : INPPY=Ext Joy(0)-(Pfire(0)*16)
+   Else If PLMODEN(PLYA)=4 : INPPY=Ext Joy(1)-(Pfire(1)*16)
+   Else 
+      If PLMODEN(PLYA)=5 and Key State($4C)=True : Bset 0,INPPY : End If 
+      If PLMODEN(PLYA)=5 and Key State($4D)=True : Bset 1,INPPY : End If 
+      If PLMODEN(PLYA)=5 and Key State($4F)=True : Bset 2,INPPY : End If 
+      If PLMODEN(PLYA)=5 and Key State($4E)=True : Bset 3,INPPY : End If 
+      If PLMODEN(PLYA)=5 and Key State($60)=True : Bset 4,INPPY : End If 
+   End If 
+
+
+      If Btst(0,INPPY)=True : Dec SELECTED
+         If SELECTED<0 : SELECTED=GORACE : End If 
+      REFRESH=True : Exit : End If 
+
+      If Btst(1,INPPY)=True : Inc SELECTED : 
+         If SELECTED>GORACE : SELECTED=0 : End If 
+      REFRESH=True : Exit : End If 
+
+
+      If Btst(2,INPPY)=True and SELECTED<5 : Rem LEFT 
+
+         If TEMP>0 and RMTOKENS<40
+            Dec TEMP
+            Inc RMTOKENS
+            'Bell  
+            Gosub _PUSH_TEMP
+            REFRESH=True : Exit 
+         End If 
+
+
+      End If 
+
+      ' increase the value 
+      If Btst(3,INPPY)=True and SELECTED<5 : Rem RIGHT
+
+         If RMTOKENS>0 and TEMP<7
+            Inc TEMP
+            Dec RMTOKENS
+            'Boom  
+            Gosub _PUSH_TEMP
+            REFRESH=True : Exit 
+         End If 
+      End If 
+
+     Rem  If Btst(4,INPPY)=True and SELECTED<5 : REFRESH=True : Exit : End If 
+
+     ' get otu of here
+       If Btst(4,INPPY)=True and SELECTED=GORACE
+           REFRESH=False : Exit 
+       End If 
+
+
+   Until 1=0
+
+
+Wait Vbl 
+
+Until REFRESH=False
+
+
+
+Flash Off 
+Fade 1
+Wait 150
+
+Rem : 1256 
+Every Off 
+
+
+Sprite 0,X Hard(-16)+100,Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+Sprite 2,X Hard(-16)+100,Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+Sprite 4,X Hard(-16)+100,Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+Sprite 6,X Hard(-16)+100,Y Hard(-16),CARSTART+(CAR_SPRITES*4)+0
+
+Sprite Update : Wait 2 : Wait Vbl : Wait Vbl 
+Sprite Off : Wait Vbl 
+
+Wait Vbl 
+
+Rem Screen Copy Logic(2) To Physic(2)
+
+
+Wait Vbl 
+
+Sprite Off 
+
+
+Screen Close 4 : Wait Vbl 
+Screen Close 2 : Wait Vbl 
+
+Wait Vbl 
+Pop Proc
+
+_SAVE_EDITS:
+
+' POKE THE NEW STATS 
+
+    TEMP1=ENGINE+(CULA*$10)
+    Poke Start(10)+(GAMEDATASIZE*PLYA)+70,TEMP1
+
+    TEMP1=BODY+(TYRES*$10)
+    Poke Start(10)+(GAMEDATASIZE*PLYA)+71,TEMP1
+
+    TEMP1=TURBO+(PITS*$10)
+    Poke Start(10)+(GAMEDATASIZE*PLYA)+72,TEMP1
+
+
+' POKE THE REMAINING TOKENS
+   Poke Start(10)+(GAMEDATASIZE*PLYA)+75,RMTOKENS
+   Poke Start(10)+(GAMEDATASIZE*PLYA)+76,LIVES
+
+Rem Stop 
+Return 
+
+_PUSH_TEMP:
+   If SELECTED=0 : ENGINE=TEMP : End If 
+   If SELECTED=1 : TYRES=TEMP : End If 
+   If SELECTED=2 : BODY=TEMP : End If 
+   If SELECTED=3 : PITS=TEMP : End If 
+   If SELECTED=4 : TURBO=TEMP : End If 
+
+      Gosub _SAVE_EDITS
+
+Return 
+
+_GET_TEMP:
+   If SELECTED=0 : TEMP=ENGINE : End If 
+   If SELECTED=1 : TEMP=TYRES : End If 
+   If SELECTED=2 : TEMP=BODY : End If 
+   If SELECTED=3 : TEMP=PITS : End If 
+   If SELECTED=4 : TEMP=TURBO : End If 
+Return 
+
+
+_CAR_SPIN:
+
+       ' cars spin
+      Rem For CAR=0 To 3 
+
+      Sprite 0,X Hard(CARTEMPX+11),Y Hard(CARTEMPY+11),CARSTART+(PLYA*CAR_SPRITES)+SPIN
+
+  If CHAMP_MODE=True
+      Sprite 2,X Hard(CARTEMPX+11),Y Hard(CARTEMPY+11-24),1075+SPIN2
+      Sprite 4,X Hard(CARTEMPX+11),Y Hard(CARTEMPY+11-48),1067+SPIN3
+  Else 
+      For ZZ=0 To LIVES
+        If ZZ<>0
+         Sprite 2*ZZ,X Hard(CARTEMPX+11)+20-(ZZ*20),Y Hard(CARTEMPY+11-24),1083+SPIN4
+        End If 
+      Next 
+  End If 
+
+        Rem Wait Vbl 
+
+      Sprite Update 
+
+        Rem   Next 
+
+      Inc SPIN : Dec SPIN2 : Dec SPIN3 : Dec SPIN4
+      If SPIN>=16 : SPIN=0 : End If 
+      If SPIN2>=3 : SPIN2=0 : End If : If SPIN2<0 : SPIN2=2 : End If 
+      If SPIN3>=8 : SPIN3=0 : End If : If SPIN3<0 : SPIN3=7 : End If 
+      If SPIN4>=8 : SPIN4=0 : End If : If SPIN4<0 : SPIN4=7 : End If 
+
+Return 
+
+_GETCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+   A=0
+   L=$FFF
+   Return 
+   
+   _GETBLUEFADE:
+   A=PALSTORE2(0) : B=PALSTORE2(1) : C=PALSTORE2(2) : D=PALSTORE2(3)
+   E=PALSTORE2(4) : F=PALSTORE2(5) : G=PALSTORE2(6) : H=PALSTORE2(7)
+   I=PALSTORE2(8) : J=PALSTORE2(9) : K=PALSTORE2(10) : L=PALSTORE2(11)
+   M=PALSTORE2(12) : N=PALSTORE2(13) : O=PALSTORE2(14) : P=PALSTORE2(15)
+   Q=PALSTORE2(16) : R=PALSTORE2(17) : S=PALSTORE2(18) : T=PALSTORE2(19)
+   U=PALSTORE2(20) : V=PALSTORE2(21) : W=PALSTORE2(22) : X=PALSTORE2(23)
+   Y=PALSTORE2(24) : Z=PALSTORE2(25) : AA=PALSTORE2(26) : BB=PALSTORE2(27)
+   CC=PALSTORE2(28) : DD=PALSTORE2(29) : EE=PALSTORE2(30) : FF=PALSTORE2(31)
+   A=0
+Rem      Colour 11,$FFF : Rem - text (regular) 
+   L=$FFF
+
+   Return 
+
+SMALLTYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY
+   DIGIT=0
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+
+Rem >> Screen 0
+
+Rem >>>     If CHAR<>1 Then Paste Bob MYX+(DIGIT*6),MYY,CHAR 
+
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR-(ACTIVE*112)
+      If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+
+Rem >>      View 
+     DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPY:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+
+Return 
+
+LARGETYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*4)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY2
+   DIGIT=0 : MYTEXT$=Upper$(MYTEXT$)
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31-32+256
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+Rem >>     Screen 0
+     If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*112)
+
+ Rem >>    Paste Bob MYX+(DIGIT*8),MYY,CHAR 
+      If MYDELAY>0 Then Wait MYDELAY
+Rem >>      View 
+     DESTX=DESTX+10 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+ SKIPPY2:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+End Proc
+
+Procedure _ARCADE_SCOREBOARD[WINNER,SECOND,THIRD,FOURTH]
+
+Dim PALSTORE(31),PALSTORE2(31)
+HEI=256
+
+' import season data (check this, i dont think we want this here)
+  _GETSEASON
+
+'If Length(1)<1
+    Erase 1
+   _GETFONT
+'End If  
+
+
+   Auto View Off 
+   Screen Open 0,320,240,32,Lowres : Curs Off : Hide 
+
+Rem   WINPIC$="graphics/results/"+"win-car00"
+
+' right... is the winner human ? 
+'   if so, that's the winner we go with
+Rem   PLYR_GRAF(NN)
+
+Rem --- if we quited, we dont have an answer here... we should work out a  
+Rem ---  result by skill, but comprimise human players 
+
+ If WINNER<0 or WINNER>3 : WINNER=Rnd(3) : End If 
+
+ If PLMODEN(WINNER)>0
+   WINPIC$="graphics/results/"+"win"+Lzstr$(PLYR_GRAF(WINNER),2)
+
+ Else If PLMODEN(SECOND)>0
+   WINPIC$="graphics/results/second00"
+
+ Else If PLMODEN(THIRD)>0
+   WINPIC$="graphics/results/third00"
+
+ Else If PLMODEN(FOURTH)>0
+   WINPIC$="graphics/results/fourth00"
+ End If 
+
+' fall back! 
+   If(Exist(WINPIC$+".iff")=False and Exist(WINPIC$+".pac")=False) or WINPIC$=""
+      WINPIC$="graphics/results/"+"win-car00"
+   End If 
+' rem this is the winning pic for the season 
+
+Rem   Screen Open 0,320,256,16,Lowres : Print WINPIC$ : Wait Key 
+Rem View 
+Rem   Screen 2 
+
+   UNPACPIC[WINPIC$,2]
+
+   Screen 2 : Double Buffer 
+
+   Screen Open 4,320,HEI,32,Lowres : Screen Hide 4
+   Get Palette 2 : Colour 0,0 : Cls 0
+   Screen To Back 4 : Flash Off 
+   Screen 2
+
+   Screen Copy 2,0,0,320,HEI To 4,0,0
+
+   Screen 2
+   Pal Get Screen 2,2
+
+   Rem ---- GET TWO VERSIONS OF THE COLOUR PALETTE
+   For A=0 To 31
+      Amcaf Aga Notation Off 
+
+      PALSTORE(A)=(Pal Get(2,A))
+      PALSTORE2(A)=Rrggbb To Rgb(Pal Get(2,A))
+      Rem PALSTORE2(A)=(Blue Val(Pal Get(2,A))*$1) 
+   Next A
+
+   Palette 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Auto View Off 
+   Bob Update Off 
+
+
+   Screen 2
+   Gosub _GETCOLOURFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 75
+
+   _WAIT_ACTIVE_PLAYER[200,-1]
+
+   Gosub _GETBLUEFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 75
+
+
+Rem    Screen Display 0,,,320,240
+
+
+   Screen 2 : Autoback 0
+
+
+
+   MYTEXT$=GAMESEASON$+" championship" : Rem +" "+Lzstr$(PLYR_GRAF(WINNER),2) 
+   MYX=-1 : MYY=16 : MYDELAY=0
+   Gosub LARGETYPE
+
+   MYTEXT$="current standings"
+   MYX=-1 : MYY=MYY+32 : MYDELAY=0
+   Gosub SMALLTYPE
+
+' FOOTER 
+   MYTEXT$="ARCADE MODE"
+   MYX=-1 : MYY=10+(23*10) : MYDELAY=0
+   Gosub SMALLTYPE
+
+   CAR1=449
+   CARY=70
+   AROW=0
+
+   For PLYA2=0 To 3
+
+      If PLYA2=0 : PLYA=WINNER : End If 
+      If PLYA2=1 : PLYA=SECOND : End If 
+      If PLYA2=2 : PLYA=THIRD : End If 
+      If PLYA2=3 : PLYA=FOURTH : End If 
+
+      Rem Ink 9 : Bar 40-10,CARY+(N*40)-10 To 40+20-10,CARY+(N*40)+20-10+1 
+      Rem Ink 10 : Box 40-10-1,CARY+(N*40)-10-1 To 40+20-10,CARY+(N*40)+20-10+1
+
+      LIVES=Peek(Start(10)+(GAMEDATASIZE*PLYA)+76)
+      If LIVES=0 and PLMODEN(PLYA)>0
+      PLMODEN(PLYA)=0
+             EXTRA$="(eliminated)"
+      Else : EXTRA$=""
+      End If 
+
+
+    Rem find this shit 
+
+     If PLMODEN(PLYA)<>-1
+
+       MYTEXT$=PLYR_NAMES$(PLYA)
+       MYX=34 : MYY=CARY+(AROW*40)-8 : MYDELAY=0
+       Gosub LARGETYPE
+
+       MYTEXT$=_TEAM$(PLYA)
+       MYX=40 : MYY=CARY+(AROW*40)-8+10 : MYDELAY=0
+       Gosub SMALLTYPE
+
+       MYTEXT$=Str$(PLYR_SCORE(PLYA))
+       MYX=200 : MYY=CARY+(AROW*40)-8 : MYDELAY=0
+       Gosub LARGETYPE
+
+       MYTEXT$=EXTRA$
+       MYX=200 : MYY=CARY+(N*40)-8+10 : MYDELAY=0
+       Gosub SMALLTYPE
+
+      Inc AROW
+      End If 
+   Next 
+
+
+MAINLOOP:
+
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+
+   _WAIT_ACTIVE_PLAYER[0,-1]
+
+
+Fade 1
+Wait 150
+Rem Erase 1
+
+Screen Close 4 : Wait Vbl 
+Screen Close 2 : Wait Vbl 
+
+
+Pop Proc
+Rem Return 
+
+
+_GETCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+   A=0
+   L=$FFF
+   Return 
+   
+   _GETBLUEFADE:
+   A=PALSTORE2(0) : B=PALSTORE2(1) : C=PALSTORE2(2) : D=PALSTORE2(3)
+   E=PALSTORE2(4) : F=PALSTORE2(5) : G=PALSTORE2(6) : H=PALSTORE2(7)
+   I=PALSTORE2(8) : J=PALSTORE2(9) : K=PALSTORE2(10) : L=PALSTORE2(11)
+   M=PALSTORE2(12) : N=PALSTORE2(13) : O=PALSTORE2(14) : P=PALSTORE2(15)
+   Q=PALSTORE2(16) : R=PALSTORE2(17) : S=PALSTORE2(18) : T=PALSTORE2(19)
+   U=PALSTORE2(20) : V=PALSTORE2(21) : W=PALSTORE2(22) : X=PALSTORE2(23)
+   Y=PALSTORE2(24) : Z=PALSTORE2(25) : AA=PALSTORE2(26) : BB=PALSTORE2(27)
+   CC=PALSTORE2(28) : DD=PALSTORE2(29) : EE=PALSTORE2(30) : FF=PALSTORE2(31)
+   A=0
+Rem      Colour 11,$FFF : Rem - text (regular) 
+   L=$FFF
+
+   Return 
+
+SMALLTYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY
+   DIGIT=0
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+
+Rem >> Screen 0
+
+Rem >>>     If CHAR<>1 Then Paste Bob MYX+(DIGIT*6),MYY,CHAR 
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR-(ACTIVE*112)
+
+     If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+Rem >>      View 
+     DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPY:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+
+LARGETYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*4)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY2
+   DIGIT=0 : MYTEXT$=Upper$(MYTEXT$)
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31-32+256
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+Rem >>     Screen 0
+     If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*112)
+
+ Rem >>    Paste Bob MYX+(DIGIT*8),MYY,CHAR 
+      If MYDELAY>0 Then Wait MYDELAY
+Rem >>      View 
+     DESTX=DESTX+10 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+ SKIPPY2:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+End Proc
+
+Procedure _CHAMPIONSHIP_SCOREBOARD[WINNER,SECOND,THIRD,FOURTH]
+
+Shared RACE_NAME$,RACE_VENUE$
+
+Dim PALSTORE(31),PALSTORE2(31)
+HEI=256
+
+' import season data (check this, i dont think we want this here)
+  _GETSEASON
+
+If Length(1)<1
+    Erase 1
+   _GETFONT
+End If 
+
+
+   Auto View Off 
+   Screen Open 0,320,240,32,Lowres : Curs Off : Hide 
+
+Rem   WINPIC$="graphics/results/"+"win-car00"
+
+' right... is the winner human ? 
+'   if so, that's the winner we go with
+Rem   PLYR_GRAF(NN)
+
+ If WINNER<0 or WINNER>3 : WINNER=Rnd(3) : End If 
+
+ If PLMODEN(WINNER)>0
+   WINPIC$="graphics/results/"+"win"+Lzstr$(PLYR_GRAF(WINNER),2)
+
+ Else If PLMODEN(SECOND)>0
+   WINPIC$="graphics/results/second00"
+
+ Else If PLMODEN(THIRD)>0
+   WINPIC$="graphics/results/third00"
+
+ Else If PLMODEN(FOURTH)>0
+   WINPIC$="graphics/results/fourth00"
+ End If 
+
+' fall back! 
+   If(Exist(WINPIC$+".iff")=False and Exist(WINPIC$+".pac")=False) or WINPIC$=""
+      WINPIC$="graphics/results/"+"win-car00"
+   End If 
+' rem this is the winning pic for the season 
+
+
+   UNPACPIC[WINPIC$,2]
+
+   Screen 2 : Double Buffer 
+
+   Screen Open 4,320,HEI,32,Lowres : Screen Hide 4
+   Get Palette 2 : Colour 0,0 : Cls 0
+   Screen To Back 4 : Flash Off 
+   Screen 2
+
+   Screen Copy 2,0,0,320,HEI To 4,0,0
+
+   Screen 2
+   Pal Get Screen 2,2
+
+   Rem ---- GET TWO VERSIONS OF THE COLOUR PALETTE
+   For A=0 To 31
+      Amcaf Aga Notation Off 
+
+      PALSTORE(A)=(Pal Get(2,A))
+      PALSTORE2(A)=Rrggbb To Rgb(Pal Get(2,A))
+      Rem PALSTORE2(A)=(Blue Val(Pal Get(2,A))*$1) 
+   Next A
+
+   Palette 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Auto View Off 
+   Bob Update Off 
+
+
+   Screen 2
+   Gosub _GETCOLOURFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 75
+
+   _WAIT_ACTIVE_PLAYER[200,-1]
+
+   Gosub _GETBLUEFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 75
+
+   Screen 2 : Autoback 0
+
+
+
+   Rem MYTEXT$=GAMESEASON$+" championship" : Rem +" "+Lzstr$(PLYR_GRAF(WINNER),2) 
+   MYTEXT$=RACE_NAME$
+   MYX=-1 : MYY=16 : MYDELAY=0
+   Gosub LARGETYPE
+
+   MYTEXT$="RACE RESULT"
+   MYX=-1 : MYY=MYY+32 : MYDELAY=0
+   Gosub SMALLTYPE
+
+   MYTEXT$=GAMESEASON$
+   MYX=-1 : MYY=MYY+32+100 : MYDELAY=0
+   Gosub LARGETYPE
+
+   MYTEXT$="cHAMPIONSHIP standings"
+   MYX=-1 : MYY=MYY+32+100+16 : MYDELAY=0
+   Gosub SMALLTYPE
+
+ ' Footer 
+   MYTEXT$="CHAMPIONSHIP MODE"
+   MYX=-1 : MYY=10+(23*10) : MYDELAY=0 : Gosub SMALLTYPE
+
+   CAR1=449
+   CARY=66
+   AROW=0
+
+
+   For PLYA2=0 To 3
+
+      If PLYA2=0 : PLYA=WINNER : MYTEXT$="1ST: " : End If 
+      If PLYA2=1 : PLYA=SECOND : MYTEXT$="2ND: " : End If 
+      If PLYA2=2 : PLYA=THIRD : MYTEXT$="3RD: " : End If 
+      If PLYA2=3 : PLYA=FOURTH : MYTEXT$="4TH: " : End If 
+
+      Rem Ink 9 : Bar 40-10,CARY+(N*40)-10 To 40+20-10,CARY+(N*40)+20-10+1 
+      Rem Ink 10 : Box 40-10-1,CARY+(N*40)-10-1 To 40+20-10,CARY+(N*40)+20-10+1
+
+      FINDCOUNTRY[PLYR_CONT(PLYA)]
+      TEMP$=Param$
+
+    Rem find this shit 
+
+     If PLMODEN(PLYA)<>-1
+
+       MYTEXT$=MYTEXT$+PLYR_NAMES$(PLYA)
+       MYX=40 : MYY=CARY+(AROW*15)-8 : MYDELAY=0
+       Gosub SMALLTYPE
+
+       MYTEXT$="("+Right$(TEMP$,3)+")"
+       MYX=252 : MYY=CARY+(AROW*15)-8 : MYDELAY=0
+       Gosub SMALLTYPE
+
+       Rem MYTEXT$=_CONT(PLYA)
+       MYX=120 : MYY=CARY+(AROW*15)-8+10 : MYDELAY=0
+       Gosub SMALLTYPE
+
+      Inc AROW
+      End If 
+   Next 
+
+   CARY=116
+   For PLYA2=0 To 3
+     PLYA=PLYA2
+
+     If PLMODEN(PLYA)<>-1
+
+       MYTEXT$="     "+MYTEXT$+_TEAM$(PLYA)
+       MYX=40 : MYY=CARY+(AROW*15) : MYDELAY=0
+       Gosub SMALLTYPE
+
+       MYTEXT$="     "+Str$(PLYR_SCORE(PLYA))
+       MYX=220-((Len(Str$(PLYR_SCORE(PLYA)))-1)*7) : MYY=CARY+(AROW*15) : MYDELAY=0
+       Gosub SMALLTYPE
+
+       Inc AROW
+     End If 
+
+   Next 
+
+
+MAINLOOP:
+
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+
+   _WAIT_ACTIVE_PLAYER[0,-1]
+
+
+Fade 1
+Wait 150
+'Erase 1 
+
+Screen Close 4 : Wait Vbl 
+Screen Close 2 : Wait Vbl 
+
+Pop Proc
+Rem Return 
+
+
+_GETCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+   A=0
+   L=$FFF
+   Return 
+   
+   _GETBLUEFADE:
+   A=PALSTORE2(0) : B=PALSTORE2(1) : C=PALSTORE2(2) : D=PALSTORE2(3)
+   E=PALSTORE2(4) : F=PALSTORE2(5) : G=PALSTORE2(6) : H=PALSTORE2(7)
+   I=PALSTORE2(8) : J=PALSTORE2(9) : K=PALSTORE2(10) : L=PALSTORE2(11)
+   M=PALSTORE2(12) : N=PALSTORE2(13) : O=PALSTORE2(14) : P=PALSTORE2(15)
+   Q=PALSTORE2(16) : R=PALSTORE2(17) : S=PALSTORE2(18) : T=PALSTORE2(19)
+   U=PALSTORE2(20) : V=PALSTORE2(21) : W=PALSTORE2(22) : X=PALSTORE2(23)
+   Y=PALSTORE2(24) : Z=PALSTORE2(25) : AA=PALSTORE2(26) : BB=PALSTORE2(27)
+   CC=PALSTORE2(28) : DD=PALSTORE2(29) : EE=PALSTORE2(30) : FF=PALSTORE2(31)
+   A=0
+Rem      Colour 11,$FFF : Rem - text (regular) 
+   L=$FFF
+
+   Return 
+
+SMALLTYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY
+   DIGIT=0
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+
+Rem >> Screen 0
+
+Rem >>>     If CHAR<>1 Then Paste Bob MYX+(DIGIT*6),MYY,CHAR 
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR-(ACTIVE*112)
+
+     If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+Rem >>      View 
+     DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPY:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+
+LARGETYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*4)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY2
+   DIGIT=0 : MYTEXT$=Upper$(MYTEXT$)
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31-32+256
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+Rem >>     Screen 0
+     If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*112)
+
+ Rem >>    Paste Bob MYX+(DIGIT*8),MYY,CHAR 
+      If MYDELAY>0 Then Wait MYDELAY
+Rem >>      View 
+     DESTX=DESTX+10 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+ SKIPPY2:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+End Proc
+
+Procedure _SUPER_RAINBOW[_BANK,_INDEX,_POSITION,_RAIN_NUMBER]
+If Prg State=-1 : FIDDLE=-1 : Else FIDDLE=0 : End If 
+   ID$=""
+   For IDCHAR=0 To 7
+      ID$=ID$+Chr$(Peek(Start(_BANK)-8+IDCHAR))
+   Next IDCHAR
+   If ID$="Rainbow "
+      Set Rainbow _RAIN_NUMBER,_INDEX,(Length(_BANK)/2)+FIDDLE,"","",""
+      For _LINE_NUMBER=0 To(Length(_BANK)/2)-2+FIDDLE
+         Rain(_RAIN_NUMBER,_LINE_NUMBER)=Deek(Start(_BANK)+_LINE_NUMBER*2)
+      Next _LINE_NUMBER
+      Rainbow _RAIN_NUMBER,0,_POSITION,(Length(_BANK)/2)+FIDDLE
+   End If 
+End Proc
+
+Procedure _WAIT_ACTIVE_PLAYER[TIMELIMIT,PLYA]
+
+COUNT=-1
+Repeat 
+   Wait Vbl 
+   For ZZZ=0 To 3
+
+      INPPY=0
+
+        If PLMODEN(ZZZ)=1 : INPPY=Joy(1)
+   Else If PLMODEN(ZZZ)=2 : INPPY=Joy(0)
+   Else If PLMODEN(ZZZ)=3 : INPPY=Ext Joy(0)-(Pfire(0)*16)
+   Else If PLMODEN(ZZZ)=4 : INPPY=Ext Joy(1)-(Pfire(1)*16)
+   Else 
+      If PLMODEN(ZZZ)=5 and Key State($4C)=True : Bset 0,INPPY : End If 
+      If PLMODEN(ZZZ)=5 and Key State($4D)=True : Bset 1,INPPY : End If 
+      If PLMODEN(ZZZ)=5 and Key State($4F)=True : Bset 2,INPPY : End If 
+      If PLMODEN(ZZZ)=5 and Key State($4E)=True : Bset 3,INPPY : End If 
+      If PLMODEN(ZZZ)=5 and Key State($60)=True : Bset 4,INPPY : End If 
+   End If 
+
+      If PLYA<>-1 and PLYA<>ZZZ : INPPY=0 : End If 
+      If INPPY>15 : Exit : End If 
+   Next 
+
+   If TIMELIMIT<>0 : Inc COUNT : End If 
+
+Until INPPY>15 or Key State($40)=True or COUNT>=TIMELIMIT
+
+
+End Proc
+
+
+
+
+
+Procedure FINDCOUNTRY[COUNTRY_NUMBER]
+BANKNO=13
+
+   GAMEPLACE$="DATA/"
+   RACE_COUNTRY$="UNKNOWN"
+
+   If Exist(GAMEPLACE$+"Countries.data")=True
+      Wload GAMEPLACE$+"Countries.data",BANKNO
+
+   Else 
+      If Length(BANKNO)>1 : Erase BANKNO : End If 
+      Goto OUTROUTE : 
+
+   End If 
+
+   NUMB=0
+
+
+Repeat 
+
+   FOUND=Peek(Start(BANKNO)+NUMB)
+
+   If FOUND=COUNTRY_NUMBER
+   Else 
+      Gosub SEEK
+   End If 
+
+Until FOUND=COUNTRY_NUMBER or NUMB>=Length(BANKNO)
+
+
+If FOUND<>COUNTRY_NUMBER
+   Rem COUNTRY_NUMBER=0 
+   Erase BANKNO
+   Rem Goto FINDCOUNTRY 
+
+    RACE_COUNTRY$="NO MAN'S LAND - NML"
+    Goto OUTROUTE : 
+End If 
+
+' found it, lets get the name
+    RACE_COUNTRY$=""
+
+ For N=NUMB+1 To NUMB+255
+
+    CHAR=Peek(Start(BANKNO)+N)
+    If CHAR=0 : Exit : End If 
+    RACE_COUNTRY$=RACE_COUNTRY$+Chr$(CHAR)
+ Next N
+
+   RACE_COUNTRY$=Replacestr$(RACE_COUNTRY$,Chr$($FF) To " - ")
+
+
+Erase BANKNO
+
+Goto OUTROUTE : 
+SEEK:
+   INNUMB=NUMB
+
+   For NUMB=INNUMB To Length(BANKNO)-1
+
+      If Peek(Start(BANKNO)+NUMB)=0 and Peek(Start(BANKNO)+NUMB+1)=$D : Exit : End If 
+
+   Next 
+
+   NUMB=NUMB+2
+
+Return 
+
+OUTROUTE:
+End Proc[RACE_COUNTRY$]
+
+Procedure _COMMS[PLYA,SCENARIO,OPPONENT,RIVALNAME$,TEAM$,DRIVR$]
+Rem Erase All  
+
+
+' sort the footer out
+ FOOTER$=""
+ If TEAM$<>"" : FOOTER$=FOOTER$+TEAM$ : End If 
+ If TEAM$<>"" and DRIVR$<>"" : FOOTER$=FOOTER$+" - " : End If 
+ If DRIVR$<>"" : FOOTER$=FOOTER$+DRIVR$ : End If 
+
+ _PLYA2FLSH[PLYA]
+  FLSH$=Param$
+
+
+
+Dim SCO(2),ANS(2)
+
+
+Wload "comms/communication_"+Lzstr$(SCENARIO,2),21
+
+
+' load data from scenario file 
+
+'   backdrop,
+'   is there a character 
+'   intro text 
+'   questions 1-8
+'   options 1-8 / A-C
+'   replies 1-8
+'   outro text (good, medium, bad) 
+
+    BIGSTRING$=Peek$(Start(21),Length(21))
+    Erase 21
+
+    BACKDROP$=Itemstr$(BIGSTRING$,1,Chr$($A))
+    QUESTCOUNT=Val(Itemstr$(BIGSTRING$,2,Chr$($A)))
+    EFFECT$=(Itemstr$(BIGSTRING$,3,Chr$($A)))
+
+    INROLINE=5
+    QUESTLINE=INROLINE+6
+    OUTROLINE=QUESTLINE+(QUESTCOUNT*23)
+
+   If BACKDROP$="" : Erase All : Pop Proc : End If 
+   If SCENARIO<7 : OPPONENT=-1 : RIVALNAME$="" : End If 
+
+'
+   PLYMODE=PLMODEN(PLYA)
+   HEI=256
+   
+   SCORE=0
+   
+   Rem Dim Z(32)
+   Dim PALSTORE(31)
+   Dim PALSTORE2(31)
+   
+
+   
+   Auto View Off 
+   ' ====== 
+   Rem Track Load "sfx/music.mod",17
+   Rem Pt Volume 64 : Pt Play 17 : Wait 10
+   
+   Erase 1
+   Rem    Load "graphics/titles.abk"
+   
+   If Length(1)<1
+   _GETFONT
+    End If 
+
+    Auto View Off 
+   
+   UNPACPIC["graphics/comms/"+BACKDROP$,2]
+   
+
+   Screen 2 : Double Buffer 
+   Rem UNPACPIC["graphics/winners/win03",2] : Double Buffer   
+   Rem Autoback 0 : Wait Vbl    
+   
+   
+   
+   Screen Open 4,320,HEI,32,Lowres : Screen Hide 4
+   Get Palette 2 : Colour 0,0 : Cls 0
+   Screen To Back 4 : Flash Off 
+   Screen 2
+   
+   Rem Screen Display 4,,24,320,hei 
+   Screen Copy 2,0,0,320,HEI To 4,0,0
+   
+   Rem Screen Display 2,,64,320,228 
+   Screen 2
+   Pal Get Screen 2,2
+   
+   Rem ---- GET TWO VERSIONS OF THE COLOUR PALETTE
+   For A=0 To 31
+         Amcaf Aga Notation Off 
+
+      PALSTORE(A)=(Pal Get(2,A))
+      PALSTORE2(A)=Rrggbb To Rgb(Pal Get(2,A))
+      Rem PALSTORE2(A)=(Blue Val(Pal Get(2,A))*$1) 
+      
+   Next A
+   
+   Palette 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Auto View Off 
+   Bob Update Off 
+
+
+COOLDOWN_OFFSETS:
+   Data -50,20,-40,20,20,0,-20,40,-30,30,-20,20,-45,25,-5,20,-35,20
+
+GARAGE_OFFSETS:
+   Data 58,20,-40,20,60,0,-54,40,-40,30,55,20,-45,25,-5,20,-35,20
+
+
+CHAR_ADD:
+
+      CHARFILE$="graphics/comms/driver_"+Lzstr$(OPPONENT,2)
+
+   If OPPONENT>-1 and(Exist(CHARFILE$+".iff") or Exist(CHARFILE$+".pac"))
+     ' place character
+             UNPACPIC[CHARFILE$,6]
+
+            If SCENARIO>=7 : 
+        Restore BACKDROP$+"_OFFSETS"
+
+        End If 
+
+        For LL=0 To OPPONENT
+            Read OFFX,OFFY
+        Next 
+
+     Get Bob 6,999,0,0 To Screen Width(6),Screen Height(6)
+     DESTX=160-(Screen Width(6)/2)+OFFX : DESTY=256-Screen Height(6)+OFFY
+
+     Screen 2 : Paste Bob DESTX,DESTY,999 : Screen Close 6
+     Screen 4 : Paste Bob DESTX,DESTY,999 : Del Bob 999
+
+   End If 
+
+   Screen 2
+   Gosub _GETBLUEFADE : 
+
+   View : Wait Vbl 
+   
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   Wait 150
+   
+   
+   ' do some intro text here
+   Rem Colour 11,$FFF : Rem - text (regular)  
+   
+
+_MY_INTRO:
+   
+   Screen 2 : Autoback 0
+
+   ' header 
+   MYTEXT$=Itemstr$(BIGSTRING$,0,Chr$($A))
+   MYX=-1 : MYY=10+(NL*10) : MYDELAY=0 : MYZ=15
+   Gosub LARGETYPE
+
+   MYTEXT$=RIVALNAME$
+   MYX=-1 : MYY=10+(1*10) : MYDELAY=0 : MYZ=15
+   Gosub SMALLTYPE
+
+   ' intro
+   For NL=0 To 4
+      MYTEXT$=Itemstr$(BIGSTRING$,INROLINE+NL,Chr$($A))
+      MYX=4 : MYY=100+(NL*10) : MYDELAY=0 : MYZ=15
+      Gosub LARGETYPE
+   Next 
+
+   ' footer 
+   MYTEXT$=FOOTER$
+   MYX=-1 : MYY=10+(23*10) : MYDELAY=0 : MYZ=15
+   Gosub SMALLTYPE
+
+
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+   
+
+   Repeat 
+      ' get inputs 
+        If PLYMODE=1 : INPPY=Joy(1)
+   Else If PLYMODE=2 : INPPY=Joy(0)
+   Else If PLYMODE=3 : INPPY=Ext Joy(0)-(Pfire(0)*16)
+   Else If PLYMODE=4 : INPPY=Ext Joy(1)-(Pfire(1)*16)
+   Else 
+      INPPY=0
+      If PLYMODE=5 and Key State($4C)=True : Bset 0,INPPY : End If 
+      If PLYMODE=5 and Key State($4D)=True : Bset 1,INPPY : End If 
+      If PLYMODE=5 and Key State($4F)=True : Bset 2,INPPY : End If 
+      If PLYMODE=5 and Key State($4E)=True : Bset 3,INPPY : End If 
+      If PLYMODE=5 and Key State($60)=True : Bset 4,INPPY : End If 
+   End If 
+
+      Wait Vbl 
+   Until Btst(4,INPPY)=True
+
+  Rem  _WAIT_ACTIVE_PLAYER[TIMELIMIT,PLYA] 
+
+
+   View : Wait Vbl 
+   Wait 5
+   
+   
+   
+   Screen Copy 4 To Logic(2) : Wait 5
+   
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+   
+   Gosub _GETCOLOURFADE : 
+   
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   
+   'Colour 6,$F0F : Rem - text (highlight)  
+   'Colour 7,$332 : Rem - shadow 1 (highlight)  
+   'Colour 10,$336 : Rem - shadow 2 (regular)   
+   'Colour 11,$FFF : Rem - text (regular) 
+   
+   
+   Update Off 
+   Wait 70
+   AB=0
+   
+   Repeat 
+      Wait Vbl : Inc AB
+   Until AB>50 or Fire(0)<>0 or Fire(1)<>0 or Ext Fire(0)<>0 or Ext Fire(1)<>0
+
+      ' get inputs 
+        If PLYMODE=1 : INPPY=Joy(1)
+   Else If PLYMODE=2 : INPPY=Joy(0)
+   Else If PLYMODE=3 : INPPY=Ext Joy(0)-(Pfire(0)*16)
+   Else If PLYMODE=4 : INPPY=Ext Joy(1)-(Pfire(1)*16)
+   Else 
+      INPPY=0
+      If PLYMODE=5 and Key State($4C)=True : Bset 0,INPPY : End If 
+      If PLYMODE=5 and Key State($4D)=True : Bset 1,INPPY : End If 
+      If PLYMODE=5 and Key State($4F)=True : Bset 2,INPPY : End If 
+      If PLYMODE=5 and Key State($4E)=True : Bset 3,INPPY : End If 
+      If PLYMODE=5 and Key State($60)=True : Bset 4,INPPY : End If 
+   End If 
+
+_DRAW_BOBS:
+   
+ ' fade out the central picture 
+   For CNT=1 To 1
+      Rem M=$FFF 
+      
+      P=Mix Colour(P,0) : O=Mix Colour(O,0)
+      M=Mix Colour(M,0)
+      N=Mix Colour(N,0)
+      K=Mix Colour(K,0) : L=Mix Colour(L,0)
+      I=Mix Colour(I,0) : J=Mix Colour(J,0)
+      
+      G=Mix Colour(G,0) : H=Mix Colour(H,0)
+      E=Mix Colour(E,0) : F=Mix Colour(F,0)
+      C=Mix Colour(C,0) : D=Mix Colour(D,0)
+      A=Mix Colour(A,0) : B=Mix Colour(B,0)
+   Next 
+   Wait Vbl 
+   
+
+  MYCOL:
+   Rem   Flash 6,"(6EF,3)(5CF,3)(4AF,3)(38F,3)(26F,3)(14F,3)(02F,3)(17F,3)(28F,3)(39F,3)(4AF,3)(5BF,3)(6CF,3)"    
+   Rem Flash 8,"(6EF,3)(5CF,3)(4AF,3)(38F,3)(26F,3)(14F,3)(02F,3)(14F,3)(26F,3)(38F,3)(4AF,3)(5CF,3)(6EF,3)"
+   Rem Flash 6,"(fE6,3)(fC5,3)(fA4,3)(f83,3)(f62,3)(f41,3)(f20,3)(14F,3)(19c,3)(1ca,3)(1f8,3)(2cF,3)(3eF,3)(4AF,3)(5CF,3)(6EF,3)" 
+
+   Flash 6,FLSH$
+
+   SELECTION=Rnd(2) : If SELECTION>2 : SELECTION=0 : End If 
+   
+   MYUPDATE=True
+   
+   
+   ' menu loop
+   
+   HEAD=0
+   '    Fade 3,,,,,,,,,,,,,,,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF : Wait 20
+   
+   ' this fades to a dim version of the screen
+   '   Fade 3,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,,,,,,,,,,, : Rem  ,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF : Wait 20
+   
+   
+   Wait Vbl : Screen Copy 2 To 4 : Wait Vbl 
+   Rem Palette ,,,,,,,,,,,,,,,,$0,$0,$444,$777,$BBB,$FFF,$B40,$721,$F00,$E91,$FF0,$C0,$60,$8F,$4F,$18 
+   
+   
+   PAGE=1
+   
+   
+   'Colour 6,$F0F : Rem - text (highlight)  
+   'Colour 7,$332 : Rem - shadow 1 (highlight)  
+   'Colour 10,$336 : Rem - shadow 2 (regular) 
+   Colour 11,$FFF : Rem - text (regular) 
+
+QUEST=0
+USEDQUEST=0
+Bset QUESTCOUNT,USEDQUEST
+
+If QUESTCOUNT<1 Then Goto SKIPPER
+
+Gosub PICK_QUESTION
+
+
+QUESTIONLOOP:
+   
+   ' ensures all inputs are clear 
+   Repeat : Wait Vbl 
+   Until Fire(0)=False and Fire(1)=False and Ext Fire(0)=False and Ext Fire(1)=False
+   NEWPAGE=False
+   
+   MYUPDATE=True
+   SELECTION=Rnd(2)
+
+   Repeat 
+
+    ' maximum number of questions is 8 
+      If QUEST>=8 : Exit 1 : End If 
+
+      ' get inputs 
+        If PLYMODE=1 : INPPY=Joy(1)
+   Else If PLYMODE=2 : INPPY=Joy(0)
+   Else If PLYMODE=3 : INPPY=Ext Joy(0)-(Pfire(0)*16)
+   Else If PLYMODE=4 : INPPY=Ext Joy(1)-(Pfire(1)*16)
+   Else 
+      INPPY=0
+      If PLYMODE=5 and Key State($4C)=True : Bset 0,INPPY : End If 
+      If PLYMODE=5 and Key State($4D)=True : Bset 1,INPPY : End If 
+      If PLYMODE=5 and Key State($4F)=True : Bset 2,INPPY : End If 
+      If PLYMODE=5 and Key State($4E)=True : Bset 3,INPPY : End If 
+      If PLYMODE=5 and Key State($60)=True : Bset 4,INPPY : End If 
+   End If 
+
+    ' page 1 is a question 
+      If PAGE=1
+
+      '  process inputs
+         If Btst(0,INPPY)=True : SELECTION=(SELECTION-1) : MYUPDATE=True : End If 
+         If Btst(1,INPPY)=True : SELECTION=(SELECTION+1) : MYUPDATE=True : End If 
+         
+         If Btst(4,INPPY)=True
+            ANSWER=SELECTION : NEWPAGE=True
+            PAGE=2
+            SCORE=SCORE+SCO(ANSWER)
+            LASTSCORE=SCO(ANSWER)
+         Exit 1 : End If 
+         
+      If SELECTION<0 : SELECTION=2 : Else If SELECTION>2 : SELECTION=0 : End If 
+
+
+    ' Page 2 is the reply
+         
+      Else If PAGE=2
+         If Btst(4,INPPY)=True : NEWPAGE=True : PAGE=1 : Exit 1 : End If 
+         
+      End If 
+
+    ' check for updates
+      If MYUPDATE=True : Gosub _DO_UPDATE : End If 
+      
+      
+   Until 1=0
+
+
+   ' process input
+   
+   
+   If PAGE>2 : PAGE=0 : Else If PAGE<0 : PAGE=2 : End If 
+   
+   If NEWPAGE=True and PAGE=2
+      Goto QUESTIONLOOP
+   End If 
+   
+   If NEWPAGE=True and PAGE=1 and LASTSCORE<>-1
+      Inc QUEST
+
+      If QUEST>=QUESTCOUNT : Goto SKIPPER : End If 
+      If QUEST>4 and LASTSCORE=0 : Goto SKIPPER : End If 
+
+      Gosub PICK_QUESTION
+      Goto QUESTIONLOOP
+   End If 
+   
+   
+SKIPPER:
+
+   Screen Copy 4 To Logic(2) : Wait 5
+   Screen Copy Logic(2) To Physic(2) : Wait 5
+   
+
+   Gosub _GETBLUEFADE
+   
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   
+   
+   ' THIS WILL HAVE OUR ENDING TEXT HERE
+     Wait 50
+
+   GOODBAD=0 : Rem 0,1 or 2  : good, medium , bad 
+
+         If SCORE>6 : GOODBAD=0
+    Else If SCORE<4 : GOODBAD=2
+    Else : GOODBAD=1 : End If 
+
+
+   Gosub _MY_OUTRO
+
+
+   Fade 3,,,,,,,,,,,,,,,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Wait 2 : Fade 2
+
+   Screen Close 4
+   Flash Off 
+
+   For N=64 To 0 Step -1 : Pt Volume N : Wait 1 : Next 
+   Pt Stop : Wait 10 : Screen Close 2 : Pt Volume 64
+   Erase 17
+
+   BIGSTRING$=""
+   Pop Proc
+
+
+PICK_QUESTION:
+   ' pick a question
+
+                      LASTQUEST=QUESTCOUNT
+         If QUEST=1 : LASTQUEST=QUESTCOUNT*0.4 : End If 
+         If QUEST=2 : LASTQUEST=QUESTCOUNT*0.6 : End If 
+         If QUEST=3 : LASTQUEST=QUESTCOUNT*0.8 : End If 
+
+         Repeat 
+            THISQUEST=Rnd(LASTQUEST)
+         Until Btst(THISQUEST,USEDQUEST)=False
+
+         Bset THISQUEST,USEDQUEST
+
+    ' collect answers
+      For NL=0 To 2 : ANS(NL)=-1 : Next 
+
+      For NL=0 To 2
+        Repeat 
+            TEMP=Rnd(2)
+        Until ANS(TEMP)=-1
+        ANS(TEMP)=NL
+      Next 
+
+Return 
+
+_MY_OUTRO:
+   
+   Screen 2 : Autoback 0
+
+      If GOODBAD<0 : GOODBAD=0
+ Else If GOODBAD>2 : GOODBAD=2
+  End If 
+
+   NL=0
+
+   ' header 
+   MYTEXT$=Itemstr$(BIGSTRING$,0,Chr$($A))
+   MYX=-1 : MYY=10+(NL*10) : MYDELAY=0 : MYZ=15
+   Gosub LARGETYPE
+
+   MYTEXT$=RIVALNAME$
+   MYX=-1 : MYY=10+(1*10) : MYDELAY=0 : MYZ=15
+   Gosub SMALLTYPE
+
+   '  good/bad text 
+   For NL=0 To 3
+      MYTEXT$=Itemstr$(BIGSTRING$,NL+OUTROLINE+(5*GOODBAD),Chr$($A))
+      MYX=4 : MYY=100+(NL*10) : MYDELAY=0 : MYZ=15
+      Gosub LARGETYPE
+   Next 
+
+   ' footer 
+   MYTEXT$=FOOTER$
+   MYX=-1 : MYY=10+(23*10) : MYDELAY=0 : MYZ=15
+   Gosub SMALLTYPE
+
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+   
+   
+   Repeat 
+      ' get inputs 
+        If PLYMODE=1 : INPPY=Joy(1)
+   Else If PLYMODE=2 : INPPY=Joy(0)
+   Else If PLYMODE=3 : INPPY=Ext Joy(0)-(Pfire(0)*16)
+   Else If PLYMODE=4 : INPPY=Ext Joy(1)-(Pfire(1)*16)
+   Else 
+      INPPY=0
+      If PLYMODE=5 and Key State($4C)=True : Bset 0,INPPY : End If 
+      If PLYMODE=5 and Key State($4D)=True : Bset 1,INPPY : End If 
+      If PLYMODE=5 and Key State($4F)=True : Bset 2,INPPY : End If 
+      If PLYMODE=5 and Key State($4E)=True : Bset 3,INPPY : End If 
+      If PLYMODE=5 and Key State($60)=True : Bset 4,INPPY : End If 
+   End If 
+
+      Wait Vbl 
+   Until Btst(4,INPPY)=True
+   
+   
+   View : Wait Vbl 
+   Wait 5
+   
+
+   Screen Copy 4 To Logic(2) : Wait 5
+   
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+
+
+Return 
+_DO_UPDATE:
+
+   Autoback 0
+   Screen Copy 4 To Logic(2)
+   Rem Bob Clear  
+   
+   ACTIVE=False
+   
+   If PAGE=1
+      LASTSCORE=0
+      ' draw the questions and answers 
+
+      ' Rem - temp 
+      '  MYTEXT$=Str$(THISQUEST) 
+      '   MYX=4 : MYY=70 : MYDELAY=0 : MYZ=15
+      '    Gosub LARGETYPE 
+
+      ' draw the question
+      For NL=0 To 3
+         THISITEM=QUESTLINE+(THISQUEST*23)+NL
+         MYTEXT$=Itemstr$(BIGSTRING$,THISITEM,Chr$($A))
+         MYX=4 : MYY=170+(NL*10) : MYDELAY=0 : MYZ=15
+         Gosub LARGETYPE
+      Next 
+
+
+      ' draw the answers 
+      For NL=0 To 2
+
+         ' MYTEXT$=Str$(ANS(NL))
+         ' MYX=4 : MYY=70+(10*NL) : MYDELAY=0 : MYZ=15
+         ' Gosub SMALLTYPE
+
+          THISITEM=QUESTLINE+(THISQUEST*23)+5+(ANS(NL)*3)
+          MYTEXT$=Itemstr$(BIGSTRING$,THISITEM,Chr$($A))
+
+          ' get good, medium, bad score
+           SCO(NL)=Val(Itemstr$(BIGSTRING$,THISITEM+1,Chr$($A)))
+
+         MYX=4 : MYY=220+(NL*10) : MYDELAY=0 : MYZ=15
+
+      If SELECTION=NL : ACTIVE=True : Else : ACTIVE=False : End If 
+         Gosub SMALLTYPE
+      Next 
+      
+   Else If PAGE=2
+      ' draw the replies 
+
+      NL=ANS(ANSWER)
+
+       For NN=0 To 1
+          THISITEM=QUESTLINE+(THISQUEST*23)+5+9+(NL*3)+NN
+          MYTEXT$=Itemstr$(BIGSTRING$,THISITEM,Chr$($A))
+
+          MYX=4 : MYY=220+(NN*10) : MYDELAY=0 : MYZ=15
+          Gosub LARGETYPE
+        Next 
+
+   End If 
+   
+   MYUPDATE=False
+   JUSTTEXT=False
+   
+   Blitter Wait 
+   Screen Copy Logic(2) To Physic(2)
+   
+   Rem  Screen Copy Physic(2),160,0,320,80 To Logic(2),160,0
+   Rem Screen Copy Physic(2),0,80,320,hei To Logic(2),0,80
+   Rem Bob Update 
+   
+   Wait Vbl 
+
+
+   Repeat : Wait Vbl 
+   Until Joy(1)=0 and Ext Joy(0)+Ext Fire(0)=0 and Ext Joy(1)+Ext Joy(1)=0
+ Return 
+   
+
+   
+   
+SMALLBAR:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPYBAR
+   DIGIT=0
+   
+   Ink MYZ
+   Bar MYX-4,MYY-3 To MYX+4+(Len(MYTEXT$)*6),MYY+8
+   Turbo Draw MYX-4,MYY-3 To MYX+4+(Len(MYTEXT$)*6),MYY-3,14-ACTIVE
+   Turbo Draw MYX-4,MYY-3 To MYX-4,MYY+8,14-ACTIVE
+   Turbo Draw MYX+4+(Len(MYTEXT$)*6),MYY-3 To MYX+4+(Len(MYTEXT$)*6),MYY+8,14-ACTIVE
+   Turbo Draw MYX-3,MYY+8 To MYX+4+(Len(MYTEXT$)*6),MYY+8,14-ACTIVE
+   Turbo Draw MYX+5+(Len(MYTEXT$)*6),MYY-2 To MYX+5+(Len(MYTEXT$)*6),MYY+9,1
+   Turbo Draw MYX-3,MYY+9 To MYX+4+(Len(MYTEXT$)*6),MYY+9,1
+   
+   Repeat 
+      CHAR=Asc(Left$(MYTEXT$,1))
+      CHAR=CHAR-31
+      If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+      Else 
+         MYTEXT$=""
+      End If 
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR
+      If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+      DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+   SKIPPYBAR:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+   
+SMALLTYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY
+   DIGIT=0
+   Repeat 
+      CHAR=Asc(Left$(MYTEXT$,1))
+      CHAR=CHAR-31
+      If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+      Else 
+         MYTEXT$=""
+      End If 
+      
+      Rem      Screen Copy 4,MYX+(DIGIT*6),MYY,MYX+(DIGIT*6)+12,MYY+8 To 2,MYX+(DIGIT*6),MYY 
+      
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR-(ACTIVE*112)
+      Blitter Wait 
+      
+      If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+      DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+
+SKIPPY:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+   
+   Rem Wait Vbl 
+
+   Blitter Wait 
+   Return 
+   
+LARGETYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*4)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY2
+   DIGIT=0 : MYTEXT$=Upper$(MYTEXT$)
+   Repeat 
+      
+      CHAR=Asc(Left$(MYTEXT$,1))
+      CHAR=CHAR-31-32+256
+      
+      
+      If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+      Else 
+         MYTEXT$=""
+      End If 
+      
+      
+      Rem Set Bob 1,-1,1,0 
+      
+      Rem                   Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*112) 
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*112)
+      
+      If MYDELAY>0 Then Wait MYDELAY
+      DESTX=DESTX+10 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+
+SKIPPY2:
+   Wait Vbl 
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+   
+   
+_GETCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+   A=0
+   Return 
+   
+   _GETBLUEFADE:
+   A=PALSTORE2(0) : B=PALSTORE2(1) : C=PALSTORE2(2) : D=PALSTORE2(3)
+   E=PALSTORE2(4) : F=PALSTORE2(5) : G=PALSTORE2(6) : H=PALSTORE2(7)
+   I=PALSTORE2(8) : J=PALSTORE2(9) : K=PALSTORE2(10) : L=PALSTORE2(11)
+   M=PALSTORE2(12) : N=PALSTORE2(13) : O=PALSTORE2(14) : P=PALSTORE2(15)
+   Q=PALSTORE2(16) : R=PALSTORE2(17) : S=PALSTORE2(18) : T=PALSTORE2(19)
+   U=PALSTORE2(20) : V=PALSTORE2(21) : W=PALSTORE2(22) : X=PALSTORE2(23)
+   Y=PALSTORE2(24) : Z=PALSTORE2(25) : AA=PALSTORE2(26) : BB=PALSTORE2(27)
+   CC=PALSTORE2(28) : DD=PALSTORE2(29) : EE=PALSTORE2(30) : FF=PALSTORE2(31)
+   A=0
+Rem      Colour 11,$FFF : Rem - text (regular) 
+   L=$FFF
+
+   Return 
+End Proc

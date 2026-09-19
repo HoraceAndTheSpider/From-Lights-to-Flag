@@ -1,117 +1,93 @@
-# Asset Pipeline
+# Asset and Data Pipeline
 
-Status: **PROVISIONAL** until representative project assets are supplied and measured.
+Status: **PROVISIONAL until the incoming AMOS prototype and prepared data are inventoried.**
 
 ## 1. Principle
 
-Keep authoring formats convenient for artists/musicians, but make runtime formats convenient for a stock A1200.
+Preserve source/preparation material, but generate runtime forms suited to a stock A1200. Conversion should be reproducible and should not destroy the owner's authored/prepared inputs.
 
-Original assets should remain available unchanged. Runtime conversion should be reproducible from source assets.
+## 2. Incoming material categories
 
-## 2. ILBM/IFF graphics
+Expected inputs now include:
 
-Expected authoring format: ILBM.
+- AMOS prototype source/data;
+- ILBM/IFF graphics;
+- 8SVX sound effects;
+- ProTracker MOD music;
+- prepared track/race data;
+- prepared menus, garage, communications, championship or driver/team data;
+- material derived from the separate Indy Heat reverse-engineering project where relevant.
 
-Likely offline processing steps:
+Inventory first; do not convert everything blindly.
 
-1. validate dimensions, bit depth and palette;
-2. preserve the source file;
-3. extract/convert planar BODY data into the exact layout required by the relevant screen/object renderer;
-4. generate masks for BOBs where required;
-5. generate compact semantic masks/maps separately when they are game data rather than visible art;
-6. optionally pack the runtime payload for floppy distribution;
-7. emit a manifest containing dimensions, planes, palette count, byte sizes and source file/hash.
+## 3. ILBM/IFF graphics
 
-Avoid runtime ILBM parsing for hot-path objects. Loading/parsing an ILBM at a screen transition may be acceptable during prototyping, but the release pipeline should favour direct runtime data.
+For each asset record dimensions, planes, palette, masking/transparency, role and ownership/source.
 
-### Race backgrounds
+Likely offline outputs may include:
 
-A 320×256 bitmap uses approximately:
+- planar BODY data in the exact required layout;
+- palette blocks;
+- BOB/object masks;
+- frame metadata/anchors;
+- pre-shifted variants only if measured worthwhile;
+- separate semantic masks/maps where art and mechanics differ.
 
-- 5 planes: 50 KiB;
-- 6 planes: 60 KiB;
-- 8 planes: 80 KiB.
+Menus/comms/garage may use different display depths from the race.
 
-This excludes palette, copper, masks and buffers. These figures are useful when deciding whether extra colours justify the DMA/memory cost.
+## 4. Race graphics and recovered engine
 
-### Cars and track objects
+Do not force incoming FLTF race graphics into a speculative format before the recovered Indy Heat renderer/data path is understood.
 
-For blitter BOBs, generate:
+There may be three useful stages:
 
-- planar image data;
-- mask data suitable for the selected cookie-cut/blit method;
-- frame metadata (width, height, modulo/alignment, anchor point);
-- optional collision footprint independent of the visual mask.
+1. original Indy Heat-compatible data for recovery tests;
+2. an FLTF adapter/converter feeding the recovered core;
+3. a later FLTF-native representation where an intentional engine/display change justifies it.
 
-Pre-shifted variants may improve speed but multiply memory usage. Do not adopt them until car size/frame count and measured blitter cost are known.
+## 5. 8SVX
 
-## 3. 8SVX sound effects
+Offline conversion should normally extract signed 8-bit PCM plus playback/loop metadata required by Paula. Sample data needed for DMA must reside in Chip RAM.
 
-Expected authoring format: 8SVX.
+## 6. MOD
 
-Offline conversion should extract:
+Keep conventional MOD files if the selected replay routine can consume them efficiently. Record player version/licence and measure memory/CPU using representative music.
 
-- signed 8-bit PCM sample bytes;
-- playback period/frequency information;
-- loop start/length if used;
-- nominal volume;
-- sample name/ID.
+## 7. Track/content packages
 
-Paula DMA requires sample data in Chip RAM. Do not retain IFF chunk overhead in runtime memory unless a loader has a specific reason to do so.
+The eventual FLTF track package should be driven by what the recovered core requires and what the owner's existing prepared data already contains.
 
-## 4. MOD music
+Likely logical elements include:
 
-Expected authoring format: ProTracker-compatible MOD.
+- visible track/background;
+- palette;
+- foreground/occlusion data;
+- surface map;
+- routes/waypoints;
+- checkpoints;
+- starts/headings;
+- pits/service data;
+- race objects;
+- event/track metadata.
 
-The module may remain in a conventional MOD layout if the selected replay routine consumes it directly. The replay routine and module memory footprint must be measured with realistic songs.
+Do not discard prepared data simply because it differs from an early proposed format; map it against engine requirements first.
 
-Candidate replay code mentioned by the supplied Amiga programming resources includes the P61 family. Treat this only as a candidate until its exact version, integration method and licence/distribution terms are recorded.
+## 8. Disk 2 championship/content
 
-## 5. Track package
-
-The release track package should separate visible art from race semantics. Candidate logical members:
-
-- `track_bitmap`;
-- `track_palette`;
-- `foreground_mask`;
-- `surface_map`;
-- `waypoints`;
-- `checkpoints`;
-- `start_positions`;
-- `pit_data`;
-- `track_objects`;
-- `track_meta`.
-
-The on-disk representation may eventually be a directory of files or a compact container. Keep the in-memory APIs independent of that packaging choice.
-
-## 6. Championship/content disk
-
-Disk 2 is expected to supply championship/content data rather than another executable copy wherever practical. Candidate data:
+Disk 2 is expected to carry data/content rather than a separate engine where practical:
 
 - track packages;
 - event order;
 - driver/team records;
-- driver/team portraits or presentation art;
+- portraits/presentation;
 - car graphics/liveries;
-- communications data;
-- championship scoring/setup data.
+- communications content;
+- championship rules/scoring/setup.
 
-The loader must fail gracefully if the required volume/content is unavailable and prompt for the expected disk rather than assuming a fixed drive number.
+## 9. Compression
 
-## 7. Compression policy
+Choose compression per resource after measuring packed size, 020 depack time, scratch memory and load context. HDD versions should not be forced through unnecessary compression/decompression merely to mirror floppy layout.
 
-Do not compress merely because the release uses floppy disks.
+## 10. Reproducibility
 
-Choose per resource after measuring:
-
-- packed size;
-- 68EC020 depack time;
-- scratch memory;
-- whether the load occurs during a tolerated transition or during gameplay;
-- HDD penalty/benefit.
-
-The supplied EAB resource list references Nibbler as a fast Amiga cruncher/depacker; it is a research candidate, not yet a dependency. Other packers/depackers should be compared on project data before a choice is recorded.
-
-## 8. Reproducibility
-
-Every converter should eventually support a deterministic command-line build. Generated runtime assets should be replaceable from originals without manual hex editing.
+Converters should eventually be deterministic command-line tools/build steps. Generated runtime assets must be reproducible from preserved originals/preparation inputs without manual hex edits.

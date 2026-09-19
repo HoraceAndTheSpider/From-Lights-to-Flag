@@ -1,72 +1,85 @@
 # Open Decisions
 
-Only decisions that materially affect design/implementation should remain here. When resolved, move the answer into the appropriate canonical document and note the date in the development log.
+Only unresolved decisions that materially affect implementation should remain here. Move resolved answers into their canonical documents and note them in the development log.
 
-## A. Immediate decisions before the first playable engine slice
+## A. Immediate technical decisions
 
-### A1. Race screen depth
+### A1. Exact FLTF race resolution
 
-Provisional recommendation: 320×256 PAL, 5 or 6 bitplanes for the race.
+The user intends a larger screen than retail Indy Heat. Need to establish:
 
-Need: representative track/car art before fixing 5 vs 6 planes. The choice affects palette freedom, Chip RAM, display DMA and blitter cost.
+- intended visible dimensions from AMOS/art/prepared data;
+- which original Indy Heat coordinate assumptions are mechanic-critical versus presentation-only;
+- bitplane/depth implications on stock A1200.
 
-### A2. Car rendering method
+Do not fix this from aesthetics alone before recovery mapping.
 
-Provisional recommendation: masked blitter BOBs first, with hardware sprites retained for later experiments/HUD/effects.
+### A2. Race renderer strategy
 
-Alternative: AGA hardware sprites may be viable for four cars, but palette/pairing/width/overlap requirements should be proved with the actual car art before designing the engine around them.
+The first pack provisionally assumed masked BOBs/dirty restore. That is no longer a committed approach.
 
-### A3. Handling model
+Need to understand the actual Indy Heat race renderer and determine whether to preserve, extend or replace it after the mechanics core is isolated.
 
-Need: owner-supplied AMOS prototype and/or description of intended steering, acceleration, collisions, sliding and upgrades.
+### A3. Toolchain
 
-The Indy Heat research can inform structure, but From Lights to Flag should not accidentally inherit handling behaviours the owner does not want.
+Provisional preference: modern VASM-based cross-build with standard Amiga executable/output formats and reproducible scripts.
+
+Need to choose exact assembler/linker/includes before first ASM delivery.
 
 ### A4. Four-player adapter
 
-Need: confirm the intended/common parallel-port four-player adapter standard and verify register/bit handling from a reliable hardware reference before coding it.
+Need reliable specification of the intended/common parallel-port four-player adapter and exact register/bit handling.
 
-### A5. Toolchain
+### A5. OS/takeover boundary
 
-Provisional preference: a modern cross-build using VASM Motorola syntax and a Hunk executable, while keeping source readable for classic Amiga assemblers where practical.
+Likely use AmigaOS for startup/loading/clean shutdown while owning custom chipset resources during demanding screens. Exact boundary remains to be designed/tested.
 
-Need to choose exact assembler/linker versions and include strategy before the first source delivery so build instructions remain stable.
+## B. Race-core recovery decisions
 
-### A6. OS-friendly vs full takeover boundary
+### B1. Minimum extracted core boundary
 
-Recommendation: use AmigaOS for startup/file loading and clean shutdown, then own the custom chipset during race/game screens as required for deterministic performance.
+Need to derive from current Indy Heat call graph/runtime evidence: which routines/data must move together to get one controllable race car operating correctly outside the original front end.
 
-Need to define how much OS remains active during gameplay and how disk-change/loading transitions are handled.
+### B2. Source representation of recovered code
 
-## B. Content/data decisions
+Need to choose naming/commenting conventions and whether exact original instruction layout is retained initially or reconstructed semantically while preserving behaviour.
 
-### B1. Disk 2 packaging
+### B3. Original renderer versus new FLTF renderer
 
-Options include ordinary files/directories or a custom grouped resource container. Do not freeze this until sample championship content gives realistic disk-size and file-count data.
+Do not decide until the original presentation path and resolution coupling are understood.
 
-### B2. Compression
+## C. Game/content decisions awaiting incoming material
 
-No packer selected. Compare representative project data and depack speed on a stock 020 first.
+### C1. Arcade and Championship rules
 
-### B3. Championship persistence
+AMOS prototype/prepared data should confirm scoring, laps, progression, upgrades and communication-screen use.
 
-Need to decide whether championship state is saved to disk, represented by passwords/codes, or both. This affects write-protection expectations and disk layout.
+### C2. Garage economy/upgrades
 
-### B4. Communications data format
+Need AMOS/data review.
 
-Need to see the AMOS prototype/content. Prefer external data defining prompt, answers, outcomes and conditions rather than hard-coded dialogue branches.
+### C3. Communications data format
 
-## C. Presentation decisions
+Need AMOS/content review. Prefer external data once real structure is understood.
 
-### C1. AGA enhancement level
+### C4. Championship persistence
 
-Early assets may be ECS-oriented. Need to decide whether the release aesthetic aims for:
+Need to establish save/password/other intended behaviour.
 
-- mostly ECS-like race graphics with richer AGA menus;
-- 64-colour AGA race art;
-- heavier 256-colour use outside the race;
-- other palette/copper enhancements.
+### C5. Disk 2 packaging
 
-### C2. PAL-only first release vs NTSC adaptation
+Defer until actual content/file sizes and dependencies are inventoried.
 
-Current baseline is PAL 50 Hz. NTSC support should be treated as a later explicit compatibility milestone rather than silently assumed.
+### C6. Compression
+
+No packer selected; benchmark representative project data first.
+
+## D. Presentation
+
+### D1. AGA enhancement level
+
+Need real assets and AMOS screens before fixing race/menu/garage/comms colour depths and palette strategy.
+
+### D2. PAL-only first release versus NTSC
+
+Current baseline remains PAL 50 Hz. NTSC should be a later explicit compatibility decision.

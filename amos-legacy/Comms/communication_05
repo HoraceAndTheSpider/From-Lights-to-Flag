@@ -1,0 +1,416 @@
+GYM - PERSONAL TRAINER
+gym
+17
+opponent
+===	INTRO
+IT'S TIME YOU GOT YOURSELF BACK INTO
+A SERIOUS EXERCISE REGIME. YOUR
+TRAINER IS GOING TO NEED SEE HOW
+YOU'VE BEEN PREPARING YOURSELF FOR
+RACES IN RECENT DAYS.
+==== 	QUESTION 1 ===================
+You've Not been in the fitness 
+centre for a long time. We'd almost
+Forgotten about you. What have you 
+Been up to instead?
+====    ANSWER 1 A
+Winning races of course
+1
+====    ANSWER 1 B
+Errr... I did a lot of home training
+-1
+====    ANSWER 1 C =================================
+I've been ill; headaches, blurred vision, blackouts.
+0
+====    REPLY 1 A
+WELL I'VE GOT TO ADMIT IT'S HARD
+NOT TO BE IMPRESSED BY THAT.
+====    REPLY 1 B
+I'VE HEARD THAT ONE BEFORE.
+
+====    REPLY 1 C
+Sounds to me like you need a heavy
+Detox session.
+==== 	QUESTION 2
+What's your current morning routine? 
+
+
+
+====    ANSWER 2 A
+Jam and Toast, then watch some cartoons
+0
+====    ANSWER 2 B
+I wouldn't want you to think even less of me. 
+-1
+====    ANSWER 2 C
+Unless it's a race-day I don't do mornings.
+1
+====    REPLY 2 A
+It's the little things i guess - but
+We'll work on a better breakfast plan.
+====    REPLY 2 B
+Believe me when I say that isn't even
+possible.
+====    REPLY 2 C
+A SINGLE MINDED FOCUS RIGHT?
+.
+==== 	QUESTION 3 ===================
+So how does a typical day pan out FOR
+ou? We need to understand where TO 
+optimise your schedule.
+ 
+====    ANSWER 3 A
+Eat, sleep, race, repeat.
+1
+====    ANSWER 3 B
+Most days are a bit of a blur to be honest. 
+-1
+====    ANSWER 3 C
+AWAY FROM RACING, IT SEEMS TO GET CRAMMED WITH ADMIN 
+0
+====    REPLY 3 A =====================
+Simple and effective I guess, huh?
+
+====    REPLY 3 B
+That's not the MOST REASSURING OF
+ANSWERS.
+====    REPLY 3 C
+REDUCING YOUR SCREENTIME IS A MUST. 
+WHO RACES FROM A SCREEN, RIGHT?
+==== 	QUESTION 4 ====================
+THE RIGHT MUSIC IS KEY TO YOUR MINDSET,
+YOUR FITNESS REGIME, AND NO DOUBT YOUR 
+RACE PREPARATION. WHAT ARE YOU LISTENING
+TO?
+====    ANSWER 4 A
+MOSTLY BERLIN TECHNO STARTING AT 3AM.
+0
+====    ANSWER 4 B
+RIGHT NOW? IT FEEL LIKE JUST A LOT OF NOISE. 
+-1
+====    ANSWER 4 C
+I'M NOT REALLY INTO MUSIC.
+1
+====    REPLY 4 A
+IT'S GOT A STRONG BEAT, BUT WE SHOULD 
+GET YOU AWAY FROM THOSE HOURS!
+====    REPLY 4 B =====================
+WITH THAT ATTITUDE, IT SEEMS LIKE YOU 
+DON'T REALLY WANT MY HELP.
+====    REPLY 4 C
+THAT'S RARE, MAYBE WE JUST NEED TO GET 
+YOU THE RIGHT SOUNDS. 
+==== 	QUESTION 5 ====================
+I could do with a feel for your current
+Level of strength. How many pounds can 
+you bench?
+
+====    ANSWER 5 A
+225
+-1
+====    ANSWER 5 B
+175
+0
+====    ANSWER 5 C
+About 135 quid for the wooden garden type. 
+1
+====    REPLY 5 A
+Oh really? With that physique?
+-1
+====    REPLY 5 B
+We'll put that to the test later.
+
+====    REPLY 5 C
+Very witty. 
+ 
+==== 	QUESTION 6 ====================
+OK, so I can see that physically, you 
+Have some key areas to work on, where 
+Do think your best attributes are?
+
+====    ANSWER 6 A
+Apart from my winning smile you mean?
+1
+====    ANSWER 6 B
+I'M ONE WITH THE CAR; THE ULTIMATE MACHINE.
+-1
+====    ANSWER 6 C
+YOU'RE THE EXPERT - ISN'T THAT WHY I'M HERE?
+0
+====    REPLY 6 A
+WHICH IT SEEMS YOU USE TO CHARM YOUR
+WAY THROUGH EVERY SITUATION.
+====    REPLY 6 B
+MODESTY ISNT YOUR STRONGEST QUALITY
+IS  IT?
+====    REPLY 6 C
+YOU'RE RIGHT - I AM. IT'S PROBABLY BEST
+YOU REALISE THAT.
+==== 	QUESTION 7 ====================
+As a racer we need to ensure your
+Reflexes and response time are second to
+No one. You'll need to think fast and
+React faster. 
+====    ANSWER 7 A
+I've cat-like reflexes for sure.
+1
+====    ANSWER 7 B
+.
+0
+====    ANSWER 7 C
+.
+0
+====    REPLY 7 A
+.
+.
+====    REPLY 7 B
+.
+.
+====    REPLY 7 C
+.
+.
+==== 	QUESTION 8 ====================
+Good sleep and wind-down habits are the
+Foundation to a productive day.
+Are you getting decent quality sleep? 
+
+====    ANSWER 8 A
+It depends on who I spend it with.
+-1
+====    ANSWER 8 B
+.
+0
+====    ANSWER 8 C
+..
+1
+====    REPLY 8 A
+I'm sure they're very lucky...
+To spend time with you unconscious.
+====    REPLY 8 B
+. MEDIUM
+.
+====    REPLY 8 C
+. GOOD
+.
+==== 	QUESTION 9 ====================
+You'll need a solid running routine to 
+Keep up your stamina - what's sort of 
+distance are you doing on a regular 
+Basis?
+====    ANSWER  A
+How far is the chip-shop and back?
+-1
+====    ANSWER  B
+Any that mark out shapes from an aerial view.
+0
+====    ANSWER  C
+I tried to run up Eau Rouge once... never again.
+1
+====    REPLY  A
+. BAD
+.
+====    REPLY  B
+. MEDIUM
+.
+====    REPLY 9 C
+. GOOD
+.
+=== 	QUESTION 10====================
+Are you currently on any Any medication 
+Which might affect your performance?
+
+
+===============AA ===================================
+I took a bunch of Benzodiazepines before coming here.
+0
+====    ANSWER  B
+Recreational medications only. 
+-1
+====    ANSWER  C
+Ginkgo biloba and Echinacea
+1
+====    REPLY  A
+Do I make you anxious? We'll find you
+Something more Natural. 
+====    REPLY  B
+I see... The Jimmy Shunt approach to 
+Your health I guess?
+====    REPLY 10 C
+Did you just list the contents of that 
+Tea you were drinking?
+=== 	QUESTION 11====================
+When you're on a roll, it's not unheard
+That you like to party. How much are
+You drinking at those things?
+
+====    ANSWER  A
+I drink a lager drink, I drink a whisky drink...
+-1
+====    ANSWER  B
+.
+0
+====    ANSWER  C
+..
+1
+====    REPLY  A ======================
+Must be before my time - I don't get
+it.
+====    REPLY  B
+.
+.
+====    REPLY 9 C
+.
+.
+=== 	QUESTION 12====================
+Let's talk diet. Do you prefer carb 
+Cycling or focus on protein plans?
+
+
+====    ANSWER  A
+YES
+0
+====    ANSWER  B
+Which one does sirloin steak fall under ?
+0
+====    ANSWER  C
+.
+0
+====    REPLY  A
+.
+.
+====    REPLY  B
+.
+.
+====    REPLY 12 C
+.
+.
+=== 	QUESTION 13====================
+Have you considered veganism? It's been
+Very successful for a lot of top grade
+Athletes to sustain good health over a
+Longer term.
+====    ANSWER  A
+.
+0
+====    ANSWER  B
+.
+0
+====    ANSWER  C
+.
+0
+====    REPLY  A
+.
+.
+====    REPLY  B
+.
+.
+====    REPLY 13 C
+.
+.
+=== 	QUESTION 14====================
+HAVE YOU TAKEN ANY HOLIDAY'S RECENTLY?
+WHERE ARE YOUR PREFERRED DESTINATIONS
+AND WHAT DO YOU GET UP TO SO YOU CAN
+UNWIND FROM RACING?
+===============AA ===================================
+I'D PREFER TO BE DOING MORE PRACTICE AND DEVELOPMENT. 
+0
+====    ANSWER  B
+..
+1
+====    ANSWER  C
+.
+-1
+====    REPLY  A
+DON'T YOU EVER SWITCH OFF? WE NEED TO 
+FIND YOU SPACE TO RECHARGE.
+====    REPLY  B
+.
+.
+====    REPLY 14 C
+.
+.
+=== 	QUESTION 15====================
+Mental well-being can be almost as 
+Important as your physical health.
+Let's go through some Mindfulness 
+exercises together.
+====    ANSWER  A
+.
+0
+====    ANSWER  B
+.
+0
+====    ANSWER  C
+.
+0
+====    REPLY  A
+.
+.
+====    REPLY  B
+.
+.
+====    REPLY 15 C
+.
+.
+==== 	QUESTION 16====================
+ALL THOSE WILD CELEBRATIONS AFTER THE 
+RACES WILL TAKE THEIR TOLL ON YOU.
+HOW OFTEN DO YOU THINK THEY HAPPEN?
+
+====    ANSWER  A
+CAN YOU TELL ME HOW OFTEN I'LL BE WINNING?
+-1
+====    ANSWER  B
+ARE YOU LOOKING FOR AN INVITE?
+1
+====    ANSWER  C
+I DON'T EVER REALLY GO ALONG TO THOSE THINGS.
+0
+====    REPLY  A
+. Bad 
+.
+====    REPLY  B
+
+.
+====    REPLY 16 C
+YOU KNOW YOU'VE BEEN SEEN AT THEM 
+REGULARLY, RIGHT?
+== 	QUESTION 17====================
+AT THE SPEEDS YOU TRAVEL AND WITH THOSE 
+G-FORCES, WE'LL BE DOING SOME HEAVY  
+WORK ON STRENGTHENING YOUR NECK.
+
+====    ANSWER  A
+
+0
+====    ANSWER  B
+.
+0
+====    ANSWER  C
+THIS IS SOMETHING OF A PAIN IN THE NECK
+0
+====    REPLY  A
+.
+.
+====    REPLY  B
+.
+.
+====    REPLY 17 C
+.
+.
+==== 	GOOD ENDING
+GREAT STUFF, I CAN SEE WE ARE GOING
+TO HAVE A GREAT RELATIONSHIP AND 
+I'M SURE WE CAN MAXIMISE YOUR ABILITY
+COMPARED WITH THE OTHER DRIVERS.
+==== 	MEDIUM ENDING
+WE'VE GOT 
+
+.
+.
+====	BAD ENDING
+It's pretty obvious you're not too
+serious about this and neither of us
+have anything to gain here. Good 
+luck finding an edge on your rivals.

@@ -1,0 +1,3107 @@
+'  
+' EDITOR VERSION 2 . 009 -- 01/2025
+'    ____________________ _    
+'     |   _  ._ ._  _  ._  
+'     |-|/_\ /  /  `_| /  |  
+'    _|_ \_, |  |  \_| | _|_     
+'
+'                   edition
+'
+'    ALL OUR GLOBAL VARIABLES  
+'
+Set Buffer 50
+Set Sprite Buffer 256
+Reserve Zone 20
+Auto View Off 
+Multi No : Amos Pri 20
+
+Wait Vbl 
+
+
+Global COUNTRY_NUMBER
+Global RACE_NAME$,RACE_VENUE$,RACE_COUNTRY$
+Global PITS_ZONEX,PITS_ZONEY,PITS_ZONEH,PITS_ZONEW
+Global RACE_LAPS,CHKPOINTS,AIPOINTS
+Global LAPX,LAPY
+Dim CARPLACEX(3),CARPLACEY(3)
+Dim CARPITSX(3),CARPITSY(3)
+Dim LAP_ZONEX(3),LAP_ZONEY(3)
+Global CARPLACEN,CARPLACEX(),CARPLACEY()
+Global CARPITSN,CARPITSX(),CARPITSY()
+Global LAP_ZONEX(),LAP_ZONEY()
+Dim CHKPOINTX(31),CHKPOINTY(31)
+Dim CHKPOINTW(31),CHKPOINTH(31)
+Dim AIPOINTX(63),AIPOINTY(63),AIPOINTZ(63)
+Global CHKPOINTX(),CHKPOINTY()
+Global CHKPOINTW(),CHKPOINTH()
+Global CROSS_ZONEX,CROSS_ZONEY
+Global CROSS_ZONEW,CROSS_ZONEH
+Global CROSSOVER_DIR
+Global CROSSOVER_ZONE_FIRST,CROSSOVER_ZONE_LAST
+Global INVISI_ZONEX,INVISI_ZONEY
+Global INVISI_ZONEW,INVISI_ZONEH
+Global AIPOINTX(),AIPOINTY(),AIPOINTZ()
+Global CURRENT_CHKPOINT
+
+Global BKSCR,FGSCR,MSCR
+Global USEMOUSE
+
+Global ROWS,CULUMNS
+
+ROWS=8 : CULUMNS=4
+Dim MENUX(CULUMNS,ROWS),MENUY(CULUMNS,ROWS)
+Dim MENULABELS$(CULUMNS,ROWS),MENUACTION(CULUMNS,ROWS),MENUACTIV(CULUMNS,ROWS)
+Global MENULABELS$(),MENUX(),MENUY(),MENUACTION(),MENUACTIV()
+Global MEGAFLSH$
+
+BKSCR=0
+FGSCR=2
+MSCR=3
+
+
+MEGAFLSH$="(F0F,4)(F00,4)(FF0,4)(0F0,4)(0FF,4)(00F,4)(FFF,4)"
+
+
+Global TRACKFILE$
+Global TRACKPATH$
+
+TRACKPATH$="NewTracks/"
+TRACKFILE$="2016_Baku"
+
+ _GETFONT
+
+ _MENU_DATA
+ _EDITOR_MENU
+  ANS=Param
+
+Print ANS
+
+Procedure _MENU_DATA
+
+   Restore _LABEL_DATA
+   For Y=0 To ROWS-1 : For X=0 To CULUMNS-1
+      Read MENULABELS$(X,Y)
+   Next : Next 
+
+   Restore _X_DATA
+
+   For Y=0 To ROWS-1 : For X=0 To CULUMNS-1
+      Read MENUX(X,Y)
+   Next : Next 
+
+   Restore _Y_DATA
+   For Y=0 To ROWS-1 : For X=0 To CULUMNS-1
+      Read MENUY(X,Y)
+   Next : Next 
+
+   Restore _ACTION_DATA
+   For Y=0 To ROWS-1 : For X=0 To CULUMNS-1
+      Read MENUACTION(X,Y)
+   Next : Next 
+
+   Restore _ACTIVE_DATA
+   For Y=0 To ROWS-1 : For X=0 To CULUMNS-1
+      Read MENUACTIV(X,Y)
+   Next : Next 
+
+
+Pop Proc
+
+' 4 x 8
+
+_X_DATA:
+Data 50,100,150,200
+Data 50,100,150,250
+Data 50,100,150,250
+Data 50,50,150,250
+Data 50,50,150,250
+Data 50,50,150,250
+Data 50,50,150,250
+Data 50,50,150,250
+
+_Y_DATA:
+Data 14*5,14*5,14*5,14*5
+Data 14*6,14*6,14*6,14*6
+Data 14*8,14*8,14*8,14*8
+Data 14*9,14*9,14*9,14*9
+Data 14*11,14*11,14*11,14*11
+Data 14*14,14*14,14*14,14*14
+Data 14*15,14*15,14*15,14*15
+Data 14*16,14*16,14*16,14*16
+
+_ACTION_DATA:
+Data 1,2,3,0
+Data 0,0,0,4
+Data 0,0,0,5
+Data 0,6,7,8
+Data 0,0,0,0
+Data 0,12,13,0
+Data 0,14,15,16
+Data 0,17,18,0
+
+_ACTIVE_DATA:
+Data 1,1,1,0
+Data 0,0,0,1
+Data 1,0,0,0
+Data 0,0,0,0
+Data 0,0,0,0
+Data 0,0,0,0
+Data 0,0,0,0
+Data 0,0,0,0
+
+_LABEL_DATA:
+Data "[NEW]","[LOAD]","[SAVE]",""
+Data "","","","[EDIT]"
+Data "","","","[IMPORT]"
+Data "","[BACKGROUND]","[FOREGROUND]","[FULL]"
+Data "","","","[EDIT]"
+Data "","[GRID]","[LAP COUNTERS]",""
+Data "","[PITS]","[PITZONE]","[CROSSOVER]"
+Data "","[CHECKPOINTS]","[A.I. POINTS]",""
+
+End Proc
+
+
+Procedure _EDITOR_MENU
+BEGIN:
+
+   Dim PALSTORE(31),PALSTORE2(31)
+   Dim FOLDER$(1000)
+   Dim TEMPX(3),TEMPY(3)
+   HEI=256
+   ROW=7 : CULUMN=2
+
+   Auto View Off 
+
+   Screen Open MSCR,320,HEI,32,Lowres : Curs Off : Hide 
+
+
+
+   WINPIC$="editor/car"
+
+   Gosub _FILE_HEALTH
+
+   ' load pic 
+   UNPACPIC[WINPIC$,MSCR]
+
+   Screen MSCR : Double Buffer 
+   Screen Open 4,320,HEI,32,Lowres : Screen Hide 4
+   Get Palette MSCR : Colour 0,0 : Cls 0
+   Screen To Back 4 : Flash Off : Screen MSCR
+
+   Screen Copy MSCR,0,0,320,HEI To 4,0,0
+
+   Screen MSCR : Pal Get Screen 2,MSCR
+
+
+Rem ---- GET TWO VERSIONS OF THE COLOUR PALETTE
+   For A=0 To 31
+      Amcaf Aga Notation Off 
+      PALSTORE(A)=(Pal Get(2,A))
+
+      PALSTORE2(A)=Rrggbb To Rgb(Pal Get(2,A))*$1
+
+      Rem PALSTORE2(A)=(Blue Val(Pal Get(2,A))*$1) 
+   Next A
+
+   Palette 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Auto View Off : Bob Update Off 
+
+   Screen MSCR
+   Gosub _GETCOLOURFADE : 
+   View : Wait Vbl 
+   Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+   'Wait 75 
+
+
+   _WAIT_ACTIVE_PLAYER[200,-1]
+
+
+
+' do we even want a blue fade? 
+     Gosub _GETBLUEFADE : 
+ '   Gosub _GETLOWCOLOURFADE :  
+    View : Wait Vbl 
+    Fade 4,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z,AA,BB,CC,DD,EE,FF
+
+   _PLYA2FLSH[0]
+    FLSH$=Param$
+   ' Wait 15 :  
+    Flash 6,FLSH$
+
+   Screen MSCR : Autoback 0
+
+
+  INDIR$=TRACKPATH$ : Gosub _LIST_FOLDERS
+  SELECTED=9 : PAGE=0 : REFRESH=True
+  USEMOUSE=True
+  Gosub _LOAD_TRACK
+
+
+_DRAWTEXT:
+   Screen MSCR : Screen Copy 4 To Logic(MSCR) : Wait Vbl 
+
+   If OLDPAGE<>PAGE : TYPE_MODE=-1 : OLDPAGE=PAGE : End If 
+
+   ACTIVE=False
+   MYTEXT$="FROM LIGHTS TO FLAG"
+   MYX=-1 : MYY=16 : MYDELAY=0 : Gosub LARGETYPE
+
+   MYTEXT$="TRACK EDITOR " : Rem +Lzstr$(TYPE_MODE,2) 
+   MYX=-1 : MYY=16+16 : MYDELAY=0 : Gosub SMALLTYPE
+
+   Gosub "PAGE"+Lzstr$(PAGE,2)+"_TEXT"
+
+
+   Screen Copy Logic(MSCR) To Physic(MSCR)
+   Wait Vbl 
+
+   ACTION=0 : REFRESH=False
+   Repeat 
+
+       Gosub "PAGE"+Lzstr$(PAGE,2)+"_INPUT"
+
+   Until 1=0 or ACTION<>0
+
+
+
+   If ACTION=1 : ACTION=0 : REFRESH=True : End If : Rem -- move around the menu
+
+
+ ' SPECIAL ACTIONS PER PAGE 
+     If ACTION>=2
+        Gosub "PAGE"+Lzstr$(PAGE,2)+"_ACTIONS"
+        ACTION=0 : Wait Vbl 
+
+         Rem Repeat 
+            Gosub _INPPY_GET
+            Wait 3
+         Rem Until INPPY=<16
+    End If 
+
+
+
+   If REFRESH=True Then Goto _DRAWTEXT
+
+
+   Screen Copy Logic(MSCR) To Physic(MSCR)
+   Fade 2 : Wait 50
+
+
+Pop Proc
+
+
+Rem Global COUNTRY_NUMBER,RACE_NAME$,RACE_LOCATION$,Race_laps
+Rem global chkpoints,  aipoints, TRACK_TYPE
+
+_TRACK_DATA_PUSH:
+      PUSHLEN=0
+      PUSHLEN=PUSHLEN+1 : Rem - country number 
+      PUSHLEN=PUSHLEN+1 : Rem - track type 
+      PUSHLEN=PUSHLEN+Len(RACE_NAME$)+1
+      PUSHLEN=PUSHLEN+Len(RACE_LOCATION$)+1
+
+      PUSHLEN=PUSHLEN+2 : Rem - car start rotation 
+      PUSHLEN=PUSHLEN+(8*2) : Rem - car start place  
+      PUSHLEN=PUSHLEN+2 : Rem - car pits rotation
+      PUSHLEN=PUSHLEN+(8*2) : Rem - car pits place 
+      PUSHLEN=PUSHLEN+6 : Rem - pits zone
+      PUSHLEN=PUSHLEN+1 : Rem - pits zone terminator 
+
+      PUSHLEN=PUSHLEN+1 : Rem - race laps
+      PUSHLEN=PUSHLEN+1 : Rem - checkpoints  
+      PUSHLEN=PUSHLEN+(CHKPOINTS*6) : Rem - checkpoint locations 
+
+      PUSHLEN=PUSHLEN+8 : Rem - lap counters 
+      PUSHLEN=PUSHLEN+1 : Rem - lap counters terminator  
+      PUSHLEN=PUSHLEN+4 : Rem - cross zone 
+      PUSHLEN=PUSHLEN+4 : Rem - invisi zone
+
+      PUSHLEN=PUSHLEN+1 : Rem - crossover direction
+      PUSHLEN=PUSHLEN+2 : Rem - first/last zone
+      PUSHLEN=PUSHLEN+1 : Rem - terminator 
+
+      PUSHLEN=PUSHLEN+1 : Rem - aipoint number 
+      PUSHLEN=PUSHLEN+(AIPOINTS*5) : Rem - aipoints 
+      PUSHLEN=PUSHLEN+1 : Rem - terminator 
+
+   '------------------- 
+
+  Erase 10 : Reserve As Work 10,(PUSHLEN)
+  Bank Name 10,"TrackDta"
+
+    SKIPPER=0
+    Poke Start(10),COUNTRY_NUMBER
+    Poke Start(10)+1,TRACK_TYPE : SKIPPER=SKIPPER+2
+    Poke$ Start(10)+SKIPPER,RACE_NAME$+Chr$(0) : SKIPPER=SKIPPER+Len(RACE_NAME$)+1
+    Poke$ Start(10)+SKIPPER,RACE_LOCATION$+Chr$(0) : SKIPPER=SKIPPER+Len(RACE_LOCATION$)+1
+
+
+    ' ============== CAR START POSITIONS 
+     Poke Start(10)+SKIPPER,CARPLACEN : Rem -- car rotation
+
+     For O=0 To 3
+         Doke Start(10)+SKIPPER+(O*4)+1+0,CARPLACEX(O)
+         Doke Start(10)+SKIPPER+(O*4)+1+2,CARPLACEY(O)
+      Next 
+     SKIPPER=SKIPPER+(8*2)+1 : Rem , cars start ROTATION, START POSITIONS 
+
+     Poke Start(10)+SKIPPER,$FF : SKIPPER=SKIPPER+1 : Rem TERMINATOR 
+
+   '================ PITLANE CAR POSITIONS
+     Poke Start(10)+SKIPPER,CARPITSN : Rem -- car rotation
+     For O=0 To 3
+         Doke Start(10)+SKIPPER+(O*4)+1+0,CARPITSX(O)
+         Doke Start(10)+SKIPPER+(O*4)+1+2,CARPITSY(O)
+     Next 
+    SKIPPER=SKIPPER+(8*2)+1 : Rem , PITS ROTATION, PITS POSITIONS  
+
+    Poke Start(10)+SKIPPER,$FF : SKIPPER=SKIPPER+1 : Rem TERMINATOR 
+
+  '================ PIT ZONE 
+      Doke Start(10)+SKIPPER+0,PITS_ZONEX
+      Doke Start(10)+SKIPPER+2,PITS_ZONEY
+      Poke Start(10)+SKIPPER+4,PITS_ZONEW
+      Poke Start(10)+SKIPPER+5,PITS_ZONEH
+
+      SKIPPER=SKIPPER+6 : Rem , PITS ZONE
+
+      Poke Start(10)+SKIPPER,$FF : SKIPPER=SKIPPER+1 : Rem TERMINATOR 
+
+   ' ===== RACE / LAP INFO
+     Poke Start(10)+SKIPPER,RACE_LAPS : SKIPPER=SKIPPER+1
+     Poke Start(10)+SKIPPER,CHKPOINTS : SKIPPER=SKIPPER+1
+
+     If CHKPOINTS>0
+      For B=1 To CHKPOINTS
+         Doke Start(10)+SKIPPER,CHKPOINTX(B-1) : SKIPPER=SKIPPER+2
+         Doke Start(10)+SKIPPER,CHKPOINTY(B-1) : SKIPPER=SKIPPER+2
+         Poke Start(10)+SKIPPER,CHKPOINTW(B-1) : SKIPPER=SKIPPER+1
+         Poke Start(10)+SKIPPER,CHKPOINTH(B-1) : SKIPPER=SKIPPER+1
+      Next B
+     End If 
+
+      For O=0 To 3
+        Poke Start(10)+(O*2)+SKIPPER+0,LAP_ZONEX(O)
+        Poke Start(10)+(O*2)+SKIPPER+1,LAP_ZONEY(O)
+      Next 
+      SKIPPER=SKIPPER+(2*4) : Rem LAP COUNTERS (X/Y *4)
+
+      Poke Start(10)+SKIPPER,$FF : SKIPPER=SKIPPER+1 : Rem TERMINATOR 
+
+  '   ========= CROSSOVER POINT (SUZUKA) 
+  '   CROSS_ZONEX   x y w h  
+      Poke Start(10)+SKIPPER+0,CROSS_ZONEX
+      Poke Start(10)+SKIPPER+1,CROSS_ZONEY
+      Poke Start(10)+SKIPPER+2,CROSS_ZONEW
+      Poke Start(10)+SKIPPER+3,CROSS_ZONEH
+      SKIPPER=SKIPPER+4 : Rem CROSS ZONE X/Y/W/H 
+
+   ' invisi_zone x y w h
+      Poke Start(10)+SKIPPER+0,INVISI_ZONEX
+      Poke Start(10)+SKIPPER+1,INVISI_ZONEY
+      Poke Start(10)+SKIPPER+2,INVISI_ZONEW
+      Poke Start(10)+SKIPPER+3,INVISI_ZONEH
+      SKIPPER=SKIPPER+4 : Rem INVIS ZONE X/Y/W/H 
+
+   ' crossover_dir   crossover_zone_first _last 
+
+      Poke Start(10)+SKIPPER+0,CROSSOVER_DIR : 
+      Poke Start(10)+SKIPPER+1,CROSSOVER_ZONE_FIRST
+      Poke Start(10)+SKIPPER+2,CROSSOVER_ZONE_LAST
+
+     SKIPPER=SKIPPER+1 : Rem CROSS DIRECTION  
+     SKIPPER=SKIPPER+2 : Rem CROSS FIRST ZONE, LAST ZONE    
+     Poke Start(10)+SKIPPER,$FF : SKIPPER=SKIPPER+1 : Rem TERMINATOR 
+
+
+     Poke Start(10)+SKIPPER,AIPOINTS : SKIPPER=SKIPPER+1 : Rem - TERM 
+
+   If AIPOINTS>0
+      For B=1 To AIPOINTS
+            Doke Start(10)+SKIPPER+0,AIPOINTX(B-1) : M=M+2
+            Doke Start(10)+SKIPPER+2,AIPOINTY(B-1) : M=M+2
+            Poke Start(10)+SKIPPER+4,AIPOINTZ(B-1) : M=M+1
+         SKIPPER=SKIPPER+5
+      Next B
+   End If 
+
+   Poke Start(10)+SKIPPER,$FF : SKIPPER=SKIPPER+1 : Rem TERMINATOR 
+
+
+Return 
+
+
+
+Return 
+
+TRACK_DATA_READ:
+
+    If Length(10)<64 : ENPT=Length(10) : Else : ENPT=64 : End If 
+
+    COUNTRY_NUMBER=Peek(Start(10))
+    TRACK_TYPE=Peek(Start(10)+1)
+    Gosub _GET_TRACK_TYPE
+
+    BIGSTRING$=Peek$(Start(10),ENPT)
+    BIGSTRING$=Right$(BIGSTRING$,Len(BIGSTRING$)-2)
+
+    RACE_NAME$=Itemstr$(BIGSTRING$,0,Chr$(0))
+    RACE_LOCATION$=Itemstr$(BIGSTRING$,1,Chr$(0))
+
+   'SKIP FORWARD TO FIND
+     SKIPPER=Len(RACE_NAME$)+Len(RACE_LOCATION$)+4
+
+
+    ' ============== CAR START POSITIONS 
+     CARPLACEN=Peek(Start(10)+SKIPPER) : Rem -- car rotation
+
+     For O=0 To 3
+         CARPLACEX(O)=Deek(Start(10)+SKIPPER+(O*4)+1+0)
+         CARPLACEY(O)=Deek(Start(10)+SKIPPER+(O*4)+1+2)
+      Next 
+     SKIPPER=SKIPPER+(8*2)+2 : Rem , cars start ROTATION, START POSITIONS, TERMINATOR   
+
+     '================ PITLANE CAR POSITIONS
+     CARPITSN=Peek(Start(10)+SKIPPER) : Rem -- car rotation
+     For O=0 To 3
+         CARPITSX(O)=Deek(Start(10)+SKIPPER+(O*4)+1+0)
+         CARPITSY(O)=Deek(Start(10)+SKIPPER+(O*4)+1+2)
+      Next 
+     SKIPPER=SKIPPER+(8*2)+2 : Rem , PITS ROTATION, PITS POSITIONS, TERMINATOR  
+
+
+    '================ PIT ZONE 
+
+      PITS_ZONEX=Deek(Start(10)+SKIPPER+0) : M=M+2
+      PITS_ZONEY=Deek(Start(10)+SKIPPER+2) : M=M+2
+      PITS_ZONEW=Peek(Start(10)+SKIPPER+4) : M=M+1
+      PITS_ZONEH=Peek(Start(10)+SKIPPER+5) : M=M+1
+
+      SKIPPER=SKIPPER+7 : Rem , PITS ZONE, TERMINATOR
+
+     ' ===== RACE / LAP INFO
+     RACE_LAPS=Peek(Start(10)+SKIPPER) : SKIPPER=SKIPPER+1
+     CHKPOINTS=Peek(Start(10)+SKIPPER) : SKIPPER=SKIPPER+1 : Rem +((CHKPOINTS)*6) 
+
+   If CHKPOINTS>0
+
+    For B=1 To CHKPOINTS
+         If SKIPPER>Length(10) : Exit : End If 
+         CHKPOINTX(B-1)=Deek(Start(10)+SKIPPER) : SKIPPER=SKIPPER+2
+         CHKPOINTY(B-1)=Deek(Start(10)+SKIPPER) : SKIPPER=SKIPPER+2
+         CHKPOINTW(B-1)=Peek(Start(10)+SKIPPER) : SKIPPER=SKIPPER+1
+         CHKPOINTH(B-1)=Peek(Start(10)+SKIPPER) : SKIPPER=SKIPPER+1
+    Next B
+   End If 
+
+      For O=0 To 3
+         LAP_ZONEX(O)=Peek(Start(10)+(O*2)+SKIPPER+0)
+         LAP_ZONEY(O)=Peek(Start(10)+(O*2)+SKIPPER+1)
+      Next 
+      SKIPPER=SKIPPER+(2*4)+1 : Rem LAP COUNTERS (X/Y *4) PLUS TERM
+
+ Rem     SKIPPER=SKIPPER+1
+
+     ' ========= CROSSOVER POINT (SUZUKA) 
+  '   CROSS_ZONEX   x y w h  
+      CROSS_ZONEX=Peek(Start(10)+SKIPPER+0)
+      CROSS_ZONEY=Peek(Start(10)+SKIPPER+1)
+      CROSS_ZONEW=Peek(Start(10)+SKIPPER+2)
+      CROSS_ZONEH=Peek(Start(10)+SKIPPER+3)
+      SKIPPER=SKIPPER+4 : Rem CROSS ZONE X/Y/W/H 
+
+   ' invisi_zone x y w h
+      INVISI_ZONEX=Peek(Start(10)+SKIPPER+0)
+      INVISI_ZONEY=Peek(Start(10)+SKIPPER+1)
+      INVISI_ZONEW=Peek(Start(10)+SKIPPER+2)
+      INVISI_ZONEH=Peek(Start(10)+SKIPPER+3)
+      SKIPPER=SKIPPER+4 : Rem INVIS ZONE X/Y/W/H 
+
+   ' crossover_dir   crossover_zone_first _last 
+
+      CROSSOVER_DIR=Peek(Start(10)+SKIPPER+0) : 
+      CROSSOVER_ZONE_FIRST=Peek(Start(10)+SKIPPER+1)
+      CROSSOVER_ZONE_LAST=Peek(Start(10)+SKIPPER+2)
+
+     SKIPPER=SKIPPER+1 : Rem CROSS DIRECTION  
+     SKIPPER=SKIPPER+3 : Rem CROSS FIRST ZONE, LAST ZONE, TERMINATOR    
+
+     AIPOINTS=Peek(Start(10)+SKIPPER) : SKIPPER=SKIPPER+1 : Rem - TERM 
+
+   If AIPOINTS>0
+      For B=1 To AIPOINTS
+         If SKIPPER>Length(10) : Exit : End If 
+         AIPOINTX(B-1)=Deek(Start(10)+SKIPPER+0) : M=M+2
+         AIPOINTY(B-1)=Deek(Start(10)+SKIPPER+2) : M=M+2
+         AIPOINTZ(B-1)=Peek(Start(10)+SKIPPER+4) : M=M+1
+         SKIPPER=SKIPPER+5
+      Next B
+   End If 
+   SKIPPER=SKIPPER+1 : Rem - TERM 
+
+'----- 
+ '   If SKIPPER>Length(10) : Return : End If  
+  '   TRACK_TYPE=Peek(Start(10)+SKIPPER) 
+   '   Gosub _GET_TRACK_TYPE  
+    '   Return   
+
+Return 
+
+QUITPAGE_ACTION:
+
+'===== quit  
+   If ACTION=99
+      PAGE=0 : REFRESH=True
+         Screen FGSCR : Fade 1 : Wait 25
+         Screen Close FGSCR : Screen Close BKSCR
+         Screen Copy 4 To MSCR
+         Screen MSCR
+         ACTION=0
+   End If 
+Return 
+
+' VIEW/EDIT TRACK DATA 
+PAGE03_ACTIONS:
+
+   REFRESH=True
+   If SELECTED=7 : PAGE=0 : SELECTED=2 : End If 
+
+' how to cycle numbers 
+   If ACTION=3 : MOVE=-1 : End If : If ACTION=4 : MOVE=1 : End If 
+
+
+' change the country 
+   If SELECTED=4 and(ACTION=3 or ACTION=4)
+      Repeat 
+         COUNTRY_NUMBER=COUNTRY_NUMBER+MOVE
+         If COUNTRY_NUMBER<0 : COUNTRY_NUMBER=255 : End If 
+         If COUNTRY_NUMBER>255 : COUNTRY_NUMBER=0 : End If 
+         FINDCOUNTRY[COUNTRY_NUMBER]
+         RACE_COUNTRY$=Param$
+      Until RACE_COUNTRY$<>"NO MAN'S LAND - NML"
+   End If 
+
+
+' change the track type
+   If SELECTED=5 and(ACTION=3 or ACTION=4)
+
+    TRACK_TYPE=TRACK_TYPE+MOVE
+      If TRACK_TYPE<0 : TRACK_TYPE=0 : End If 
+      If TRACK_TYPE>7 : TRACK_TYPE=7 : End If 
+
+   End If 
+
+
+' change the year type 
+   If SELECTED=0 and(ACTION=3 or ACTION=4)
+
+       PART1$=Left$(TRACKFILE$,4)
+       PART2$=Right$(TRACKFILE$,Len(TRACKFILE$)-4)
+       YEAR=Val(PART1$)
+
+       YEAR=YEAR+MOVE
+       If YEAR<0 : YEAR=0 : End If 
+       If YEAR>9999 : YEAR=9999 : End If 
+
+       PART1$=Lzstr$(YEAR,4)
+       PART2$=Right$(TRACKFILE$,Len(TRACKFILE$)-4)
+       TRACKFILE$=PART1$+PART2$
+
+
+   End If 
+
+   If SELECTED=1 and(ACTION=2 or ACTION=5)
+
+       PART1$=Left$(TRACKFILE$,4)
+       PART2$=RACE_LOCATION$
+       PART2$=Replacestr$(PART2$," " To "")
+       PART2$=Replacestr$(PART2$,":" To "")
+       PART2$=Replacestr$(PART2$,"/" To "")
+       PART2$=Replacestr$(PART2$,"\" To "")
+       PART2$=Replacestr$(PART2$,"{" To "")
+       PART2$=Replacestr$(PART2$,"}" To "")
+       PART2$=Replacestr$(PART2$,"#" To "")
+       PART2$=Replacestr$(PART2$,"(" To "")
+       PART2$=Replacestr$(PART2$,")" To "")
+       PART2$=Replacestr$(PART2$,"_" To "")
+       PART2$=Replacestr$(PART2$,"." To "")
+       PART2$=Replacestr$(PART2$,"," To "")
+       PART2$="_"+PART2$
+       TRACKFILE$=PART1$+PART2$
+
+   End If 
+
+
+' change the race laps 
+   If SELECTED=6 and(ACTION=3 or ACTION=4)
+
+    RACE_LAPS=RACE_LAPS+MOVE
+      If RACE_LAPS<1 : RACE_LAPS=1 : End If 
+      If RACE_LAPS=255 : RACE_LAPS=255 : End If 
+
+   End If 
+
+
+'==   TEXT ITEMS   
+'===== toggle the edit mode
+
+If SELECTED=2
+   TEMP$=RACE_NAME$ : Gosub _TEXT_EDITOR
+   RACE_NAME$=TEMP$
+Else If SELECTED=3
+   TEMP$=RACE_LOCATION$ : Gosub _TEXT_EDITOR
+   RACE_LOCATION$=TEMP$
+End If 
+
+
+Return 
+
+_TEXT_EDITOR:
+      If ACTION=5 and TYPE_MODE=-1 : TYPE_MODE=0
+ Else If ACTION=5 and TYPE_MODE<>-1 : TYPE_MODE=-1
+  End If 
+
+
+' =====  move cursor left/right
+     If TYPE_MODE<>-1 and ACTION=6 : Dec TYPE_MODE
+Else If TYPE_MODE<>-1 and ACTION=7 : Inc TYPE_MODE
+
+
+      If TYPE_MODE=Len(TEMP$) and TYPE_MODE<33
+         TYPE_MODE=Len(TEMP$)
+         TEMP$=TEMP$+" "
+
+      Else If TYPE_MODE>32
+         Dec TYPE_MODE
+
+      End If 
+
+ End If 
+
+
+  Rem If ACTION=8 : Stop : End If  
+
+   ' keyboard input 
+   If K$<>"" and ACTION=8
+     Rem If TYPE_MODE=1 
+     Rem    TEMP$=K$+Right$(TEMP$,Len(TEMP$)-TYPE_MODE) 
+     Rem    Inc TYPE_MODE 
+
+      If K$=Chr$($1) and TYPE_MODE>0 : Rem - DELETE 
+
+         TEMP2$=TEMP$
+         TEMP$=""
+         TEMP$=TEMP$+Left$(TEMP2$,TYPE_MODE-1)
+         Rem TEMP$=TEMP$+K$ 
+         TEMP$=TEMP$+Right$(TEMP2$,Len(TEMP2$)-TYPE_MODE)
+         Dec TYPE_MODE
+
+         If TYPE_MODE>32 : TYPE_MODE=32 : End If 
+
+      Else 
+         TEMP2$=TEMP$
+         TEMP$=""
+         TEMP$=TEMP$+Left$(TEMP2$,TYPE_MODE)
+         TEMP$=TEMP$+K$
+         TEMP$=TEMP$+Right$(TEMP2$,Len(TEMP2$)-TYPE_MODE)
+         Inc TYPE_MODE
+
+         If TYPE_MODE>32 : TYPE_MODE=32 : End If 
+         If Len(TEMP$)>32 : TEMP$=Left$(TEMP$,32) : End If 
+      End If 
+   End If 
+
+
+Return 
+
+
+
+PAGE03_INPUT:
+
+ Gosub _INPPY_GET
+ Gosub _KEYS_GET
+
+ If K$<>"" and TYPE_MODE<>-1 : ACTION=8 : End If 
+
+ FIRST=0 : LAST=7
+
+   ' change selected item 
+  If Btst(0,INPPY)=True and TYPE_MODE=-1 : Dec SELECTED : ACTION=1 : TYPE_MODE=-1
+  Else If Btst(1,INPPY)=True and TYPE_MODE=-1 : Inc SELECTED : ACTION=1 : TYPE_MODE=-1
+    End If 
+
+ '       If Btst(0,INPPY)=True : Dec SELECTED : ACTION=1 : TYPE_MODE=-1 
+  ' Else If Btst(1,INPPY)=True : Inc SELECTED : ACTION=1 : TYPE_MODE=-1
+  '  End If  
+
+        If SELECTED>LAST : SELECTED=FIRST : End If 
+        If SELECTED<FIRST : SELECTED=LAST : End If 
+
+
+   ' change 
+        If Btst(2,INPPY)=True and Btst(4,INPPY)=True : ACTION=3
+   Else If Btst(3,INPPY)=True and Btst(4,INPPY)=True : ACTION=4
+   Else If INPPY=16 : ACTION=5
+   Else If Btst(4,INPPY)=True : ACTION=2
+
+      End If 
+
+
+   ' change left/right - no fire , or only fire 
+        If Btst(2,INPPY)=True and Btst(4,INPPY)=False : ACTION=6
+   Else If Btst(3,INPPY)=True and Btst(4,INPPY)=False : ACTION=7
+    End If 
+
+Return 
+
+
+_KEYS_GET:
+
+  K$=""
+  For Z=1 To $41
+   TEST=Key State(Z)
+      If Z=$1 and TEST=True : K$="1" : Exit : End If 
+      If Z=$2 and TEST=True : K$="2" : Exit : End If 
+      If Z=$3 and TEST=True : K$="3" : Exit : End If 
+      If Z=$4 and TEST=True : K$="4" : Exit : End If 
+      If Z=$5 and TEST=True : K$="5" : Exit : End If 
+      If Z=$6 and TEST=True : K$="6" : Exit : End If 
+      If Z=$7 and TEST=True : K$="7" : Exit : End If 
+      If Z=$8 and TEST=True : K$="8" : Exit : End If 
+      If Z=$9 and TEST=True : K$="9" : Exit : End If 
+      If Z=$A and TEST=True : K$="0" : Exit : End If 
+
+      If Z=$10 and TEST=True : K$="Q" : Exit : End If 
+      If Z=$11 and TEST=True : K$="W" : Exit : End If 
+      If Z=$12 and TEST=True : K$="E" : Exit : End If 
+      If Z=$13 and TEST=True : K$="R" : Exit : End If 
+      If Z=$14 and TEST=True : K$="T" : Exit : End If 
+      If Z=$15 and TEST=True : K$="Y" : Exit : End If 
+      If Z=$16 and TEST=True : K$="U" : Exit : End If 
+      If Z=$17 and TEST=True : K$="I" : Exit : End If 
+      If Z=$18 and TEST=True : K$="O" : Exit : End If 
+      If Z=$19 and TEST=True : K$="P" : Exit : End If 
+      If Z=$1A and TEST=True : K$="[" : Exit : End If 
+      If Z=$1B and TEST=True : K$="]" : Exit : End If 
+
+      If Z=$20 and TEST=True : K$="A" : Exit : End If 
+      If Z=$21 and TEST=True : K$="S" : Exit : End If 
+      If Z=$22 and TEST=True : K$="D" : Exit : End If 
+      If Z=$23 and TEST=True : K$="F" : Exit : End If 
+      If Z=$24 and TEST=True : K$="G" : Exit : End If 
+      If Z=$25 and TEST=True : K$="H" : Exit : End If 
+      If Z=$26 and TEST=True : K$="J" : Exit : End If 
+      If Z=$27 and TEST=True : K$="K" : Exit : End If 
+      If Z=$28 and TEST=True : K$="L" : Exit : End If 
+      If Z=$29 and TEST=True : K$=":" : Exit : End If 
+      If Z=$2A and TEST=True : K$="'" : Exit : End If 
+
+      If Z=$31 and TEST=True : K$="Z" : Exit : End If 
+      If Z=$32 and TEST=True : K$="X" : Exit : End If 
+      If Z=$33 and TEST=True : K$="C" : Exit : End If 
+      If Z=$34 and TEST=True : K$="V" : Exit : End If 
+      If Z=$35 and TEST=True : K$="B" : Exit : End If 
+      If Z=$36 and TEST=True : K$="N" : Exit : End If 
+      If Z=$37 and TEST=True : K$="M" : Exit : End If 
+      If Z=$38 and TEST=True : K$="," : Exit : End If 
+      If Z=$39 and TEST=True : K$="." : Exit : End If 
+      If Z=$3A and TEST=True : K$="/" : Exit : End If 
+
+      If Z=$41 and TEST=True : K$=Chr$($1) : Exit : End If 
+      If Z=$40 and TEST=True : K$=" " : Exit : End If 
+
+
+  Next 
+
+Clear Key 
+
+Return 
+
+PAGE03_TEXT:
+
+   '  If Length(10)<1 
+   '  End If  
+
+   FINDCOUNTRY[COUNTRY_NUMBER]
+   CONT$=Param$
+
+    ACTIVE=False : MYTEXT$="TRACK FILE: "
+    MYX=25 : MYY=(3*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+    PART1$=Left$(TRACKFILE$,4)
+    ACTIVE=(SELECTED=0) : MYTEXT$=PART1$
+    MYX=25+(6*13) : MYY=(3*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+  '  ACTIVE=False : MYTEXT$="_"
+  '  MYX=25+(Len(PART1$)+13)*6 : MYY=(3*10)+48 : MYDELAY=0 : Gosub SMALLTYPE 
+
+    ACTIVE=(SELECTED=1) : Rem MYTEXT$=Right$(TRACKFILE$,Instr(TRACKFILE$,"_")-1) 
+    MYTEXT$=Right$(TRACKFILE$,Len(TRACKFILE$)-4)
+    MYX=25+(17*6) : MYY=(3*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+
+
+
+ ' RACE NAME
+    ACTIVE=False : MYTEXT$="RACE NAME: "
+    MYX=25 : MYY=(4*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+BLAH:
+    ACTIVE=(SELECTED=2)
+
+    If(ACTIVE=True and TYPE_MODE<0) or ACTIVE=False
+      MYTEXT$=RACE_NAME$
+
+    Else 
+       MYTEXT$=""
+       MYTEXT$=MYTEXT$+Left$(RACE_NAME$,TYPE_MODE)
+       MYTEXT$=MYTEXT$+Chr$(65+65+13) : Rem 32+28
+       MYTEXT$=MYTEXT$+Right$(RACE_NAME$,Len(RACE_NAME$)-TYPE_MODE)
+
+    End If 
+
+    MYX=25+(6*13) : MYY=(4*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+
+  ' LOCATION 
+    ACTIVE=False : MYTEXT$="LOCATION: "
+    MYX=25 : MYY=(5*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+    ACTIVE=(SELECTED=3)
+
+    If(ACTIVE=True and TYPE_MODE<0) or ACTIVE=False
+
+      MYTEXT$=RACE_LOCATION$
+    Else 
+       MYTEXT$=""
+       MYTEXT$=MYTEXT$+Left$(RACE_LOCATION$,TYPE_MODE)
+       MYTEXT$=MYTEXT$+Chr$(65+65+13) : Rem 32+28
+       MYTEXT$=MYTEXT$+Right$(RACE_LOCATION$,Len(RACE_LOCATION$)-TYPE_MODE)
+
+    End If 
+
+    MYX=25+(6*13) : MYY=(5*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+
+   ' COUNTRY
+    ACTIVE=False : MYTEXT$="COUNTRY: "
+    MYX=25 : MYY=(6*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+    ACTIVE=(SELECTED=4) : MYTEXT$=CONT$
+    MYX=25+(6*13) : MYY=(6*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+   ' TRACK TYPE 
+    ACTIVE=False : MYTEXT$="TYPE: "
+    MYX=25 : MYY=(7*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+    Gosub _GET_TRACK_TYPE
+
+    ACTIVE=(SELECTED=5) : MYTEXT$=TRACKTYPE$+"    "+Hex$(TRACK_TYPE,2)
+    MYX=25+(6*13) : MYY=(7*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+
+
+'======
+
+
+    ACTIVE=False : MYTEXT$="RACE LAPS: "
+    MYX=25 : MYY=(8*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+    ACTIVE=(SELECTED=6) : MYTEXT$=Lzstr$(RACE_LAPS,3)+" ("+Lzstr$((RACE_LAPS/3)+1,2)+")"
+    MYX=25+(6*13) : MYY=(8*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+    ACTIVE=False : MYTEXT$="CHECKPOINTS: "
+    MYX=25 : MYY=(10*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+    ACTIVE=False : MYTEXT$=Lzstr$(CHKPOINTS,2)
+    MYX=25+(6*13) : MYY=(10*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+    ACTIVE=False : MYTEXT$="A.I. POINTS: "
+    MYX=25 : MYY=(11*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+    ACTIVE=False : MYTEXT$=Lzstr$(AIPOINTS,2)
+    MYX=25+(6*13) : MYY=(11*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+
+    ACTIVE=(SELECTED=7) : MYTEXT$="[EXIT]"
+    MYX=-1 : MYY=(18*10)+64 : MYDELAY=0 : Gosub SMALLTYPE
+
+Return 
+
+ ' DEBUGS 
+      ACTIVE=(SELECTED=5) : MYTEXT$=Str$(SKIPPER)
+      MYX=25 : MYY=(13*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+      ACTIVE=(SELECTED=5) : MYTEXT$=Hex$(TRACK_TYPE)
+      MYX=25 : MYY=(14*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+
+Return 
+
+
+
+
+' VIEW BACKGROUND/FOREGROUND 
+
+PAGE04_INPUT:
+PAGE05_INPUT:
+PAGE06_INPUT:
+  Gosub _INPPY_GET
+  If Btst(4,INPPY)=True : ACTION=2 : End If 
+Return 
+
+
+PAGE04_ACTIONS:
+   Screen Close BKSCR
+   PAGE=0 : REFRESH=True
+Return 
+
+PAGE05_ACTIONS:
+   Screen Close FGSCR
+   PAGE=0 : REFRESH=True
+Return 
+
+
+PAGE06_ACTIONS:
+   Screen Close FGSCR : Screen Close BKSCR
+   PAGE=0 : REFRESH=True
+Return 
+
+
+PAGE04_TEXT:
+  Screen To Front BKSCR : View : Colour 0,0
+  Wait Vbl : INPPY=0 : Wait 10
+Return 
+
+PAGE05_TEXT:
+   Screen To Front FGSCR : View : Colour 0,0
+   Wait Vbl : INPPY=0 : Wait 10
+Return 
+
+PAGE06_TEXT:
+  Screen To Front BKSCR : View : Colour 0,0
+  Wait Vbl : INPPY=0 : Wait 10
+Return 
+
+
+' ================ pit zone editor 
+
+PAGE09_TEXT:
+
+   TEMPX=PITS_ZONEX : TEMPY=PITS_ZONEY
+   TEMPH=PITS_ZONEH : TEMPW=PITS_ZONEW
+
+      Gosub _ZONE_SELECTION_BOX
+
+Return 
+
+
+' ================ crossover/invisi zone editor  ' 
+PAGE10_TEXT:
+
+
+   ' clean the screen 
+    Bob Off 1 : Bob Off 2 : Bob Off 3 : Bob Off 4 : Bob Off 5 : Bob Off 6 : Bob Update 
+     Screen Copy FGSCR To BKSCR
+
+      Screen BKSCR
+      Colour 13,$980 : Colour 6,$F49
+      Colour 15,$988 : Colour 9,$333
+
+   ' draw the zone numbers
+
+   Screen BKSCR
+   For A=0 To CHKPOINTS-1
+      ACTIVE=False
+
+
+      If ZSELECT=3 and A=CROSSOVER_ZONE_FIRST : ACTIVE=True : End If 
+      If ZSELECT=4 and A=CROSSOVER_ZONE_LAST : ACTIVE=True : End If 
+
+      MYTEXT$=Lzstr$(A,2)
+      MYX=CHKPOINTX(A)+(CHKPOINTW(A)/2) : MYY=CHKPOINTY(A)+(CHKPOINTH(A)/2) : MYDELAY=0
+      Gosub SMALLTYPE
+   Next 
+
+   If ZSELECT=0
+
+      TEMPX=INVISI_ZONEX : TEMPY=INVISI_ZONEY
+      TEMPH=INVISI_ZONEH : TEMPW=INVISI_ZONEW
+      Gosub _XZONE_BOX
+
+      TEMPX=CROSS_ZONEX : TEMPY=CROSS_ZONEY
+      TEMPH=CROSS_ZONEH : TEMPW=CROSS_ZONEW
+      Gosub _CROSS_SELECTION_BOX
+
+
+   Else If ZSELECT=1
+
+      TEMPX=CROSS_ZONEX : TEMPY=CROSS_ZONEY
+      TEMPH=CROSS_ZONEH : TEMPW=CROSS_ZONEW
+      Gosub _ZONE_BOX
+
+      TEMPX=INVISI_ZONEX : TEMPY=INVISI_ZONEY
+      TEMPH=INVISI_ZONEH : TEMPW=INVISI_ZONEW
+      Gosub _ZONE_SELECTION_BOX_NOCLEAR
+
+
+   Else If ZSELECT>1
+
+      TEMPX=CROSS_ZONEX : TEMPY=CROSS_ZONEY
+      TEMPH=CROSS_ZONEH : TEMPW=CROSS_ZONEW
+      Gosub _XZONE_BOX
+
+      TEMPX=INVISI_ZONEX : TEMPY=INVISI_ZONEY
+      TEMPH=INVISI_ZONEH : TEMPW=INVISI_ZONEW
+      Gosub _ZONE_BOX
+
+   End If 
+
+
+ ' ====== 
+      MYX1=INVISI_ZONEX+(INVISI_ZONEW/2)
+      MYY1=INVISI_ZONEY+(INVISI_ZONEH/2)
+      MYY2=MYY1 : MYX2=MYX1
+
+        If CROSSOVER_DIR=0 : Rem --left/right 
+           Q1=157-16 : Q2=149-16
+           MYX2=MYX2+8
+           MYX1=MYX1-8
+
+   Else If CROSSOVER_DIR=255 : Rem --up/down
+           Q1=145-16+160 : Q2=153-16+160
+           MYY2=MYY2+2
+           MYY1=MYY1-8
+           MYX1=MYX1-8 : MYX2=MYX2+8
+
+   Else If CROSSOVER_DIR=1 : Rem -- switch off
+           Q1=100 : Q2=1
+           MYY1=MYY1-2 : MYY1=MYY1-2
+   Else 
+           Q1=32 : Q2=1
+           MYY1=MYY1-2 : MYY1=MYY1-2
+   End If 
+
+   Screen BKSCR
+
+   If Q1<>1 : Bob 5,MYX1,MYY1,Q1+((ZSELECT=2)*160)
+   Else : Bob Off 5 : End If 
+
+   If Q2<>1 : Bob 6,MYX2,MYY2,Q2+((ZSELECT=2)*160)
+   Else : Bob Off 6 : End If 
+   Bob Update 
+
+Return 
+
+
+' ======= checkpoints  editor
+PAGE11_TEXT:
+
+      Screen Copy FGSCR To BKSCR : Rem Wait Vbl 
+
+     Rem    Bob Off 1 : Bob Off 2 : Bob Off 3 : Bob Off 4 : Bob Update  
+
+            Bob Off 5 : Bob Off 6
+
+            TEMPX=CHKPOINTX(ZSELECT)
+            TEMPY=CHKPOINTY(ZSELECT)
+            TEMPW=CHKPOINTW(ZSELECT)
+            TEMPH=CHKPOINTH(ZSELECT)
+            Gosub _ZONE_SELECTION_BOX : Rem Wait Vbl 
+
+       If TEMPW>16
+           Bob 5,TEMPX+((TEMPW/3)*1)-2,TEMPY+((TEMPH/2)*1)-2,101-((SELECTION=4)*160)
+            Bob 6,TEMPX+((TEMPW/3)*2)-2,TEMPY+((TEMPH/2)*1)-2,100-((SELECTION=5)*160)
+       Else 
+           Bob 5,TEMPX+((TEMPW/2)*1)-2,TEMPY+((TEMPH/3)*1)-2,101-((SELECTION=4)*160)
+            Bob 6,TEMPX+((TEMPW/2)*1)-2,TEMPY+((TEMPH/3)*2)-2,100-((SELECTION=5)*160)
+       End If 
+
+
+       If TEMPW<8 and TEMPH<8
+            Bob Off 5 : Bob Off 6
+       End If 
+
+         Bob Update 
+
+         For CHK=0 To CHKPOINTS-1
+            If CHK<>ZSELECT
+            TEMPX=CHKPOINTX(CHK)
+            TEMPY=CHKPOINTY(CHK)
+            TEMPW=CHKPOINTW(CHK)
+            TEMPH=CHKPOINTH(CHK)
+            Gosub _ZONE_BOX
+            End If 
+         Next 
+
+          '  If OLDCHK<>CHK
+          '   TEMPX=CHKPOINTX(OLDCHK)
+          '   TEMPY=CHKPOINTY(OLDCHK)
+          '   TEMPW=CHKPOINTW(OLDCHK)
+          '   TEMPH=CHKPOINTH(OLDCHK)
+          '   Gosub _ZONE_BOX : OLDCHK=CHK 
+          ' End If 
+
+
+         ' we'll do a couple of extra selection buttons too 
+         ' remove and add zones 
+
+
+Return 
+
+_XZONE_BOX:
+
+   Screen BKSCR
+
+      _TOPLX=TEMPX
+      _TOPLY=TEMPY
+      _TOPRX=_TOPLX+TEMPW
+      _TOPRY=_TOPLY
+      _BOTLX=_TOPLX
+      _BOTLY=_TOPLY+TEMPH
+      _BOTRX=_TOPRX
+      _BOTRY=_BOTLY
+
+      If ZSELECT=0 : CCC=13 : 
+      Else : CCC=15
+      End If 
+      Turbo Draw _TOPLX,_TOPLY To _TOPRX,_TOPRY,CCC
+      Turbo Draw _TOPLX,_TOPLY To _BOTLX,_BOTLY,CCC
+      Turbo Draw _TOPRX,_TOPRY To _BOTRX,_BOTRY,CCC
+      Turbo Draw _BOTLX,_BOTLY To _BOTRX,_BOTRY,CCC
+
+Return 
+
+_ZONE_BOX:
+
+   Screen BKSCR
+
+      _TOPLX=TEMPX
+      _TOPLY=TEMPY
+      _TOPRX=_TOPLX+TEMPW
+      _TOPRY=_TOPLY
+      _BOTLX=_TOPLX
+      _BOTLY=_TOPLY+TEMPH
+      _BOTRX=_TOPRX
+      _BOTRY=_BOTLY
+
+      If CHK=0 : CCC=13 : 
+      Else If CHK=CHKPOINTS-1
+      CCC=9 : Else : CCC=15
+      End If 
+      Turbo Draw _TOPLX,_TOPLY To _TOPRX,_TOPRY,CCC
+      Turbo Draw _TOPLX,_TOPLY To _BOTLX,_BOTLY,CCC
+      Turbo Draw _TOPRX,_TOPRY To _BOTRX,_BOTRY,CCC
+      Turbo Draw _BOTLX,_BOTLY To _BOTRX,_BOTRY,CCC
+
+Return 
+
+_ZONE_SELECTION_BOX:
+
+   If OLDW=0 or OLDH=0
+      Bob Off 1 : Bob Off 2 : Bob Off 3 : Bob Off 4 : Bob Update 
+      Screen Copy FGSCR To BKSCR : Rem Wait Vbl 
+   Else 
+       Bob Off 1 : Bob Off 2 : Bob Off 3 : Bob Off 4 : Bob Update 
+       Screen Copy FGSCR,OLDX,OLDY,OLDX+OLDW+1,OLDY+OLDH+1 To BKSCR,OLDX,OLDY
+    End If 
+
+_ZONE_SELECTION_BOX_NOCLEAR:
+   Screen BKSCR
+
+ ' zones not set
+   If TEMPW=0 : TEMPW=50 : If TEMPX=0 : TEMPX=135 : End If : End If 
+   If TEMPH=0 : TEMPH=50 : If TEMPY=0 : TEMPY=95 : End If : End If 
+
+      _TOPLX=TEMPX
+      _TOPLY=TEMPY
+      _TOPRX=_TOPLX+TEMPW
+      _TOPRY=_TOPLY
+      _BOTLX=_TOPLX
+      _BOTLY=_TOPLY+TEMPH
+      _BOTRX=_TOPRX
+      _BOTRY=_BOTLY
+
+      Screen BGSCR : Wait Vbl : Blitter Wait 
+
+      Turbo Draw _TOPLX,_TOPLY To _TOPRX,_TOPRY,14
+      Turbo Draw _TOPLX,_TOPLY To _BOTLX,_BOTLY,14
+      Turbo Draw _TOPRX,_TOPRY To _BOTRX,_BOTRY,14
+      Turbo Draw _BOTLX,_BOTLY To _BOTRX,_BOTRY,14
+
+      Bob 1,_TOPLX,_TOPLY,112+1+((SELECTION=0)*-160)
+      Bob 2,_TOPRX-4,_TOPRY,112+2+((SELECTION=1)*-160)
+      Bob 3,_BOTLX,_BOTLY-4,112+3+((SELECTION=2)*-160)
+      Bob 4,_BOTRX-4,_BOTRY-4,112+4+((SELECTION=3)*-160)
+
+      Bob Update 
+      OLDX=TEMPX
+      OLDY=TEMPY
+      OLDW=TEMPW
+      OLDH=TEMPH
+
+Return 
+
+
+_CROSS_SELECTION_BOX:
+
+   Screen BKSCR
+
+ ' zones not set
+   If TEMPW=0 : TEMPW=50 : If TEMPX=0 : TEMPX=135 : End If : End If 
+   If TEMPH=0 : TEMPH=50 : If TEMPY=0 : TEMPY=95 : End If : End If 
+
+      _TOPLX=TEMPX
+      _TOPLY=TEMPY
+      _TOPRX=_TOPLX+TEMPW
+      _TOPRY=_TOPLY
+      _BOTLX=_TOPLX
+      _BOTLY=_TOPLY+TEMPH
+      _BOTRX=_TOPRX
+      _BOTRY=_BOTLY
+
+      Screen BGSCR : Wait Vbl : Blitter Wait 
+
+      Turbo Draw _TOPLX,_TOPLY To _TOPRX,_TOPRY,14
+      Turbo Draw _TOPLX,_TOPLY To _BOTLX,_BOTLY,14
+      Turbo Draw _TOPRX,_TOPRY To _BOTRX,_BOTRY,14
+      Turbo Draw _BOTLX,_BOTLY To _BOTRX,_BOTRY,14
+
+      If CROSSOVER_DIR=255
+         Bob 1,_TOPLX+((_TOPRX-_TOPLX)/2)-2,_TOPLY-2,112+5+((SELECTION=0)*-160)
+         Bob 2,_BOTLX+((_TOPRX-_TOPLX)/2)-2,_BOTLY-2,112+5+((SELECTION=1)*-160)
+
+      Else If CROSSOVER_DIR=0
+         Bob 1,_TOPLX-2,_TOPLY+((_BOTLY-_TOPLY)/2)-2,112+6+((SELECTION=0)*-160)
+         Bob 2,_TOPRX-2,_TOPRY+((_BOTRY-_TOPRY)/2)-2,112+6+((SELECTION=1)*-160)
+
+      End If 
+
+ '     Bob 1,_TOPLX,_TOPLY,112+1+((SELECTION=0)*-160) 
+ '     Bob 2,_TOPRX-4,_TOPRY,112+2+((SELECTION=1)*-160) 
+ '     Bob 3,_BOTLX,_BOTLY-4,112+3+((SELECTION=2)*-160) 
+ '     Bob 4,_BOTRX-4,_BOTRY-4,112+4+((SELECTION=3)*-160) 
+
+      Bob Update 
+      OLDX=TEMPX
+      OLDY=TEMPY
+      OLDW=TEMPW
+      OLDH=TEMPH
+
+Return 
+
+PAGE11_ACTIONS:
+
+     If SHIFT=2 : SHIFT=3 : End If 
+
+     If SHIFT=1 and(SELECTION=0 or SELECTION=2) : SHIFT=2 : End If 
+     If SHIFT=1 and(SELECTION=1 or SELECTION=3) : SHIFT=1 : End If 
+
+      REFRESH=True
+
+      TEMPX=CHKPOINTX(ZSELECT)
+      TEMPY=CHKPOINTY(ZSELECT)
+      TEMPW=CHKPOINTW(ZSELECT)
+      TEMPH=CHKPOINTH(ZSELECT)
+
+      Gosub _ZONE_SELECTION_CORNER
+
+      CHKPOINTX(ZSELECT)=TEMPX
+      CHKPOINTY(ZSELECT)=TEMPY
+      CHKPOINTW(ZSELECT)=TEMPW
+      CHKPOINTH(ZSELECT)=TEMPH
+
+
+   ' ==== keep all in bounds
+      If SELECTION>5 : SELECTION=0 : End If 
+      If SELECTION<0 : SELECTION=5 : End If 
+
+      If SHIFT=3
+          If ACTION=5 : Inc ZSELECT : End If : Rem -N 
+          If ACTION=9 : Dec ZSELECT : End If : Rem -S 
+
+          If ACTION=7 : SELECTION=5 : End If : Rem -E 
+          If ACTION=11 : SELECTION=4 : End If : Rem -W 
+
+         If ZSELECT<0 : ZSELECT=CHKPOINTS-1 : End If 
+         If ZSELECT>CHKPOINTS-1 : ZSELECT=0 : End If 
+
+      End If 
+
+   '  remove and delete zones 
+       If ACTION=13 and SELECTION=4 : Bell : Rem add zone 
+
+         If CHKPOINTS<254
+             CHKPOINTS=CHKPOINTS+1
+
+              For ZZZ=CHKPOINTS-1 To ZSELECT+1 Step -1
+                CHKPOINTX(ZZZ)=CHKPOINTX(ZZZ-1)
+                CHKPOINTY(ZZZ)=CHKPOINTY(ZZZ-1)
+                CHKPOINTH(ZZZ)=CHKPOINTH(ZZZ-1)
+                CHKPOINTW(ZZZ)=CHKPOINTW(ZZZ-1)
+               Next 
+
+                ZSELECT=ZSELECT+1
+                CHKPOINTX(ZSELECT)=160-25
+                CHKPOINTY(ZSELECT)=120-25
+                CHKPOINTH(ZSELECT)=50
+                CHKPOINTW(ZSELECT)=50
+
+          End If 
+
+          Repeat : Wait Vbl : Until Joy(1)=0 and Joy(0)<16 and Inkey$=""
+       End If 
+
+       If ACTION=13 and SELECTION=5 : Boom : Rem delete zone
+
+         '  move all the checkpoints "down" one, assuming we are not last one 
+         If ZSELECT<>CHKPOINTS-1 and CHKPOINTS>1
+
+            For ZZZ=ZSELECT To CHKPOINTS-2
+             CHKPOINTX(ZZZ)=CHKPOINTX(ZZZ+1)
+             CHKPOINTY(ZZZ)=CHKPOINTY(ZZZ+1)
+             CHKPOINTH(ZZZ)=CHKPOINTH(ZZZ+1)
+             CHKPOINTW(ZZZ)=CHKPOINTW(ZZZ+1)
+            Next 
+          End If 
+         ' -- clear the final spot, assuming we have enough of them 
+          If CHKPOINTS>1
+            CHKPOINTX(CHKPOINTS-1)=0 : CHKPOINTY(CHKPOINTS-1)=0
+            CHKPOINTH(CHKPOINTS-1)=0 : CHKPOINTW(CHKPOINTS-1)=0
+            CHKPOINTS=CHKPOINTS-1
+            ZSELECT=ZSELECT-1
+            If ZSELECT=-1 : ZSELECT=CHKPOINTS-1 : End If 
+          End If 
+
+            Repeat : Wait Vbl : Until Joy(1)=0 and Joy(0)<16 and Inkey$=""
+       End If 
+   Return 
+
+PAGE10_ACTIONS:
+
+     If SHIFT=2 : SHIFT=3 : End If 
+
+    ' If SHIFT=1 and(SELECTION=0 or SELECTION=2) : SHIFT=2 : End If  
+    ' If SHIFT=1 and(SELECTION=1 or SELECTION=3) : SHIFT=1 : End If  
+
+      REFRESH=True
+
+   '  
+   If ZSELECT=0
+      TEMPX=CROSS_ZONEX : TEMPY=CROSS_ZONEY : TEMPW=CROSS_ZONEW : TEMPH=CROSS_ZONEH
+      Gosub _CROSS_SELECTION_EDGE
+
+      CROSS_ZONEX=TEMPX : CROSS_ZONEY=TEMPY
+      CROSS_ZONEW=TEMPW : CROSS_ZONEH=TEMPH
+
+
+   Else If ZSELECT=1
+      TEMPX=INVISI_ZONEX : TEMPY=INVISI_ZONEY : TEMPW=INVISI_ZONEW : TEMPH=INVISI_ZONEH
+
+      Gosub _ZONE_SELECTION_CORNER
+
+      INVISI_ZONEX=TEMPX : INVISI_ZONEY=TEMPY
+      INVISI_ZONEW=TEMPW : INVISI_ZONEH=TEMPH
+
+      If CROSSOVER_DIR=255 : Rem -- passing up/down, crossing left/right
+
+          CROSS_ZONEW=TEMPW : CROSS_ZONEX=TEMPX
+          If CROSS_ZONEY<TEMPY : CROSS_ZONEY=TEMPY : End If 
+          If CROSS_ZONEY+CROSS_ZONEH>TEMPY+TEMPH
+               CROSS_ZONEY=TEMPY+TEMPH-CROSS_ZONEH : End If 
+
+      Else If CROSSOVER_DIR=0 : Rem -- passing left/right, crossing up/down
+
+           CROSS_ZONEH=TEMPH : CROSS_ZONEY=TEMPY
+          If CROSS_ZONEX<TEMPX : CROSS_ZONEX=TEMPX : End If 
+          If CROSS_ZONEX+CROSS_ZONEW>TEMPX+TEMPW
+               CROSS_ZONEX=TEMPX+TEMPW-CROSS_ZONEW : End If 
+      End If 
+
+   Else If ZSELECT=3
+
+          If ACTION=5 and SHIFT=0
+           Dec CROSSOVER_ZONE_FIRST
+            If CROSSOVER_ZONE_FIRST<0 : CROSSOVER_ZONE_FIRST=0 : End If 
+
+     Else If ACTION=9 and SHIFT=0
+           Inc CROSSOVER_ZONE_FIRST
+            If CROSSOVER_ZONE_FIRST=>CROSSOVER_ZONE_LAST : CROSSOVER_ZONE_FIRST=CROSSOVER_ZONE_LAST-1 : End If 
+            If CROSSOVER_ZONE_FIRST>CHKPOINTS-1 : CROSSOVER_ZONE_FIRST=CHKPOINTS-1 : End If 
+      End If 
+
+   Else If ZSELECT=4
+
+          If ACTION=5 and SHIFT=0
+           Dec CROSSOVER_ZONE_LAST
+            If CROSSOVER_ZONE_LAST<0 : CROSSOVER_ZONE_LAST=0 : End If 
+            If CROSSOVER_ZONE_LAST<=CROSSOVER_ZONE_FIRST : CROSSOVER_ZONE_LAST=CROSSOVER_ZONE_FIRST+1 : End If 
+
+     Else If ACTION=9 and SHIFT=0
+           Inc CROSSOVER_ZONE_LAST
+            If CROSSOVER_ZONE_LAST>CHKPOINTS-1 : CROSSOVER_ZONE_LAST=CHKPOINTS-1 : End If 
+
+      End If 
+
+
+   End If 
+
+
+  '   If SHIFT=1 and(SELECTION=0 or SELECTION=2) : SHIFT=2 : End If  
+  '   If SHIFT=1 and(SELECTION=1 or SELECTION=3) : SHIFT=1 : End If  
+
+
+      If SHIFT=3 : Rem -- second button held , switch to other "zones" (invis, cross, direction, or in/out points)
+
+          If ACTION=5 or ACTION=7 : Inc ZSELECT : Screen Copy FGSCR To BKSCR : REFRESH=True : End If : Rem -N 
+          If ACTION=9 or ACTION=11 : Dec ZSELECT : Screen Copy FGSCR To BKSCR : REFRESH=True : End If : Rem -S 
+
+    '     EXTRA ACTIONS = Direction/ On /OFF and FIRST/LAST Zone Editor  
+      '    If ACTION=7 : SELECTION=5 : End If : Rem -E 
+      '    If ACTION=11 : SELECTION=4 : End If : Rem -W  
+
+        If ZSELECT<0 : ZSELECT=4 : End If 
+        If ZSELECT>4 : ZSELECT=0 : End If 
+
+      End If 
+
+
+      Gosub QUITPAGE_ACTION
+
+
+Return 
+PAGE09_ACTIONS:
+
+      REFRESH=True
+
+      TEMPX=PITS_ZONEX
+      TEMPY=PITS_ZONEY
+      TEMPW=PITS_ZONEW
+      TEMPH=PITS_ZONEH
+
+      Gosub _ZONE_SELECTION_CORNER
+
+   ' ==== keep all in bounds
+      If SELECTION>3 : SELECTION=0 : End If 
+      If SELECTION<0 : SELECTION=3 : End If 
+
+      PITS_ZONEX=TEMPX
+      PITS_ZONEY=TEMPY
+      PITS_ZONEW=TEMPW
+      PITS_ZONEH=TEMPH
+
+
+Return 
+
+_CROSS_SELECTION_EDGE:
+
+   If SHIFT=1 or SHIFT=2
+      If SHIFT=1 : MOVE=1 : End If 
+      If SHIFT=2 : MOVE=4 : End If 
+   End If 
+
+   ' make changes 
+   If SHIFT=1 : Rem -------------or SHIFT=2  
+
+      If SELECTION=0 and CROSS_DIRECTION=255
+          If ACTION=5 : TEMPY=TEMPY-MOVE : End If : Rem -N 
+          If ACTION=9 : TEMPY=TEMPY+MOVE : End If : Rem - S
+      End If 
+
+      If SELECTION=1 and CROSS_DIRECTION=255
+          If ACTION=5 : TEMPH=TEMPH-MOVE : End If : Rem -N 
+          If ACTION=9 : TEMPH=TEMPH+MOVE : End If : Rem - S
+      End If 
+
+      If SELECTION=0 and CROSS_DIRECTION=0
+          If ACTION=7 : TEMPX=TEMPX+MOVE : End If : Rem  E 
+          If ACTION=11 : TEMPX=TEMPX-MOVE : End If : Rem - S
+      End If 
+
+      If SELECTION=1 and CROSS_DIRECTION=0
+          If ACTION=7 : TEMPW=TEMPW+MOVE : End If : Rem -N 
+          If ACTION=11 : TEMPW=TEMPW-MOVE : End If : Rem - S
+      End If 
+
+
+   End If 
+
+   ' check we still have some height
+      If TEMPH<1 : TEMPH=1 : End If 
+      If TEMPW<1 : TEMPW=1 : End If 
+
+      ' dont go off the lower edge 
+
+        If CROSSOVER_DIR=255 : Rem-- under up/down and crossing left/right
+
+         If TEMPY<INVISI_ZONEY : TEMPY=INVISI_ZONEY : End If 
+         If TEMPY+TEMPH>INVISI_ZONEY+INVISI_ZONEH : TEMPH=INVISI_ZONEY+INVISI_ZONEH-TEMPY : End If 
+
+   Else If CROSSOVER_DIR=0 : Rem-- under left/right and crossing up/down
+
+         If TEMPX<INVISI_ZONEX : TEMPX=INVISI_ZONEX : End If 
+         If TEMPX+TEMPW>INVISI_ZONEX+INVISI_ZONEW : TEMPW=INVISI_ZONEX+INVISI_ZONEW-TEMPX : End If 
+
+   End If 
+
+
+   ' switch cursor (up/down)  
+   If((ACTION=5 or ACTION=9) and SHIFT=0 and CROSSOVER_DIR=255) or ACTION=98
+      SELECTION=1-SELECTION
+
+   ' switch cursor (left/right) 
+   Else If((ACTION=7 or ACTION=11) and SHIFT=0 and CROSSOVER_DIR=0) or ACTION=98
+      SELECTION=1-SELECTION
+
+
+'  or ACTION=7 or ACTION=11
+   End If 
+
+
+
+
+
+Return 
+
+_ZONE_SELECTION_CORNER:
+
+ ' move with nothing held = move icon 
+
+If SHIFT=1 or SHIFT=2
+   If SHIFT=1 : MOVE=1 : End If 
+   If SHIFT=2 : MOVE=4 : End If 
+
+   If SELECTION=0
+       If ACTION=5 : TEMPY=TEMPY-MOVE : End If : Rem -N 
+       If ACTION=6 : TEMPX=TEMPX+MOVE : TEMPY=TEMPY-MOVE : End If : Rem -NE
+       If ACTION=7 : TEMPX=TEMPX+MOVE : End If : Rem -E 
+       If ACTION=8 : TEMPX=TEMPX+MOVE : TEMPY=TEMPY+MOVE : End If : Rem -SE
+       If ACTION=9 : TEMPY=TEMPY+MOVE : End If : Rem - S
+       If ACTION=10 : TEMPX=TEMPX-MOVE : TEMPY=TEMPY+MOVE : End If : Rem -SW
+       If ACTION=11 : TEMPX=TEMPX-MOVE : End If : Rem -W 
+       If ACTION=12 : TEMPX=TEMPX-MOVE : TEMPY=TEMPY-MOVE : End If : Rem -NW
+   End If 
+
+   If SELECTION=1
+       If ACTION=5 : TEMPY=TEMPY-MOVE : End If : Rem -N 
+       If ACTION=6 : TEMPW=TEMPW+MOVE : TEMPY=TEMPY-MOVE : End If : Rem -NE
+       If ACTION=7 : TEMPW=TEMPW+MOVE : End If : Rem -E 
+       If ACTION=8 : TEMPW=TEMPW+MOVE : TEMPY=TEMPY+MOVE : End If : Rem -SE
+       If ACTION=9 : TEMPY=TEMPY+MOVE : End If : Rem - S
+       If ACTION=10 : TEMPW=TEMPW-MOVE : TEMPY=TEMPY+MOVE : End If : Rem -SW
+       If ACTION=11 : TEMPW=TEMPW-MOVE : End If : Rem -W 
+       If ACTION=12 : TEMPW=TEMPW-MOVE : TEMPY=TEMPY-MOVE : End If : Rem -NW
+   End If 
+
+   If SELECTION=2
+       If ACTION=5 : TEMPH=TEMPH-MOVE : End If : Rem -N 
+       If ACTION=6 : TEMPX=TEMPX+MOVE : TEMPH=TEMPH-MOVE : End If : Rem -NE
+       If ACTION=7 : TEMPX=TEMPX+MOVE : End If : Rem -E 
+       If ACTION=8 : TEMPX=TEMPX+MOVE : TEMPH=TEMPH+MOVE : End If : Rem -SE
+       If ACTION=9 : TEMPH=TEMPH+MOVE : End If : Rem - S
+       If ACTION=10 : TEMPX=TEMPX-MOVE : TEMPH=TEMPH+MOVE : End If : Rem -SW
+       If ACTION=11 : TEMPX=TEMPX-MOVE : End If : Rem -W 
+       If ACTION=12 : TEMPX=TEMPX-MOVE : TEMPH=TEMPH-MOVE : End If : Rem -NW
+   End If 
+
+   If SELECTION=3
+       If ACTION=5 : TEMPH=TEMPH-MOVE : End If : Rem -N 
+       If ACTION=6 : TEMPW=TEMPW+MOVE : TEMPH=TEMPH-MOVE : End If : Rem -NE
+       If ACTION=7 : TEMPW=TEMPW+MOVE : End If : Rem -E 
+       If ACTION=8 : TEMPW=TEMPW+MOVE : TEMPH=TEMPH+MOVE : End If : Rem -SE
+       If ACTION=9 : TEMPH=TEMPH+MOVE : End If : Rem - S
+       If ACTION=10 : TEMPW=TEMPW-MOVE : TEMPH=TEMPH+MOVE : End If : Rem -SW
+       If ACTION=11 : TEMPW=TEMPW-MOVE : End If : Rem -W 
+       If ACTION=12 : TEMPW=TEMPW-MOVE : TEMPH=TEMPH-MOVE : End If : Rem -NW
+   End If 
+
+End If 
+
+     If ACTION=97
+         AZ=X Screen(X Mouse)
+         ZA=Y Screen(Y Mouse)
+
+         If SELECTION=0
+            TEMPX=AZ
+            TEMPY=ZA
+         Else If SELECTION=1
+            TEMPW=AZ-TEMPX
+            TEMPY=ZA
+         Else If SELECTION=2
+            TEMPX=AZ
+            TEMPH=ZA-TEMPY
+         Else If SELECTION=3
+            TEMPW=AZ-TEMPX
+            TEMPH=ZA-TEMPY
+
+         End If 
+     End If 
+
+   ' move up/down with no fire held - change selection  
+     If ACTION=5 and SHIFT=0 and SELECTION>1 : SELECTION=SELECTION-2 : REFRESH=True : Wait Vbl : End If 
+     If ACTION=6 : SELECTION=1 : End If 
+     If ACTION=7 and SHIFT=0 and Even(SELECTION) : Inc SELECTION : REFRESH=True : Wait Vbl : End If 
+     If ACTION=8 : SELECTION=3 : End If 
+     If ACTION=9 and SHIFT=0 and SELECTION<2 : SELECTION=SELECTION+2 : REFRESH=True : Wait Vbl : End If 
+     If ACTION=10 : SELECTION=2 : End If 
+     If ACTION=11 and SHIFT=0 and Odd(SELECTION) : Dec SELECTION : REFRESH=True : Wait Vbl : End If 
+     If ACTION=12 : SELECTION=0 : End If 
+
+     If ACTION=98 : Inc SELECTION : End If 
+
+
+
+' ==== keep all in bounds
+ '  If SELECTION>3 : SELECTION=0 : End If 
+ '  If SELECTION<0 : SELECTION=3 : End If 
+
+     If TEMPW<3 : TEMPW=3 : End If 
+     If TEMPH<3 : TEMPH=3 : End If 
+     If TEMPX<0 : TEMPX=0 : End If 
+     If TEMPX>319 : TEMPH=319 : End If 
+     If TEMPY<0 : TEMPY=0 : End If 
+     If TEMPY>239 : TEMPH=239 : End If 
+
+
+
+
+      Gosub QUITPAGE_ACTION
+
+Return 
+
+'=====================   TRACK MARKERS EDITOR
+
+' ================ start positions 
+PAGE07_TEXT:
+
+   TEMPN=CARPLACEN
+   For N=0 To 3 : 
+      TEMPX(N)=CARPLACEX(N)
+      TEMPY(N)=CARPLACEY(N)
+   Next 
+
+      Gosub _POINT_EDITOR_TEXT
+
+   CARPLACEN=TEMPN
+   For N=0 To 3 : 
+      CARPLACEX(N)=TEMPX(N)
+      CARPLACEY(N)=TEMPY(N)
+   Next 
+
+Return 
+
+
+' ================ Pit positions 
+PAGE08_TEXT:
+
+   TEMPN=CARPITSN
+   For N=0 To 3 : 
+      TEMPX(N)=CARPITSX(N)
+      TEMPY(N)=CARPITSY(N)
+   Next 
+
+      Gosub _POINT_EDITOR_TEXT
+
+   CARPITSN=TEMPN
+   For N=0 To 3 : 
+      CARPITSX(N)=TEMPX(N)
+      CARPITSY(N)=TEMPY(N)
+   Next 
+
+Return 
+
+_POINT_EDITOR_TEXT:
+      Screen FGSCR
+
+      If SELECTION=0 : OFF=0 : End If 
+      If SELECTION=1 : OFF=16 : End If 
+      If SELECTION=2 : OFF=160 : End If 
+      If SELECTION=3 : OFF=176 : End If 
+
+      For N=0 To 3
+         If TEMPX(N)<>0 and TEMPY(N)<>0
+            If SELECTION=N
+             Bob N+1,TEMPX(N)-1,TEMPY(N)-2,128+TEMPN+OFF
+            Else 
+            Bob N+1,TEMPX(N)-1,TEMPY(N)-2,98
+     Rem        Sprite N,tempX(N)-2,tempY(N)-2,98   
+            End If 
+         End If 
+      Next 
+
+      Bob Update 
+
+Return 
+
+PAGE12_TEXT:
+
+
+   Screen Copy FGSCR To BGSCR
+   ZX=13
+   ZY=7
+   OFFX=42
+
+   If LAP_ZONEX(SELECTION)<>OLDX or LAP_ZONEY(SELECTION)<>OLDY
+         Rem -- redraw
+  '       Gosub _TRACK_VIEW_FULL 
+    '  Unpack 12 To BKSCR
+    '  Unpack 13 To FGSCR
+    '  Dual Playfield FGSCR,BKSCR
+  ''' Palette $0,$444,$999,$CCC,$7D,$DB1,$D02,$B0,$0,$333,$666,$999,$459,$960,$830,$60 : Rem ,Z(0),Z(1),Z(2),Z(3),Z(4),Z(5),Z(6),Z(7),Z(8),Z(9),Z(10),Z(11),Z(12),Z(13),Z(14),Z(15)  
+
+   End If 
+
+
+   Screen BKSCR
+
+   For N=0 To 3
+
+     _TOPLX=LAP_ZONEX(N)
+     _TOPLY=LAP_ZONEY(N)
+
+      If N=0 : ZZ=6 : End If 
+      If N=1 : ZZ=4 : End If 
+      If N=2 : ZZ=7 : End If 
+      If N=3 : ZZ=5 : End If 
+
+      If N=SELECTION : ZZ=14 : End If 
+
+      If N<>SELECTION
+       Turbo Draw _TOPLX+0,_TOPLY+0 To _TOPLX+ZX,_TOPLY+0,ZZ
+       Turbo Draw _TOPLX+0,_TOPLY+0 To _TOPLX+0,_TOPLY+ZY,ZZ
+       Turbo Draw _TOPLX+ZX,_TOPLY+0 To _TOPLX+ZX,_TOPLY+ZY,ZZ
+       Turbo Draw _TOPLX+0,_TOPLY+ZY To _TOPLX+ZX,_TOPLY+ZY,ZZ
+
+       Turbo Draw _TOPLX+18,_TOPLY+0 To _TOPLX+ZX+24,_TOPLY+0,3
+       Turbo Draw _TOPLX+18,_TOPLY+1 To _TOPLX+ZX+24,_TOPLY+1,ZZ
+       Turbo Draw _TOPLX+18,_TOPLY+5 To _TOPLX+ZX+24,_TOPLY+5,3
+       Turbo Draw _TOPLX+18,_TOPLY+6 To _TOPLX+ZX+24,_TOPLY+6,ZZ
+
+       Turbo Draw OFFX+_TOPLX+0,_TOPLY+0 To OFFX+_TOPLX+ZX,_TOPLY+0,ZZ
+       Turbo Draw OFFX+_TOPLX+0,_TOPLY+0 To OFFX+_TOPLX+0,_TOPLY+ZY,ZZ
+       Turbo Draw OFFX+_TOPLX+ZX,_TOPLY+0 To OFFX+_TOPLX+ZX,_TOPLY+ZY,ZZ
+       Turbo Draw OFFX+_TOPLX+0,_TOPLY+ZY To OFFX+_TOPLX+ZX,_TOPLY+ZY,ZZ
+      End If 
+   Next 
+
+     _TOPLX=LAP_ZONEX(SELECTION)
+     _TOPLY=LAP_ZONEY(SELECTION)
+
+      ZZ=14
+
+      Turbo Draw _TOPLX+0,_TOPLY+0 To _TOPLX+ZX,_TOPLY+0,ZZ
+      Turbo Draw _TOPLX+0,_TOPLY+0 To _TOPLX+0,_TOPLY+ZY,ZZ
+      Turbo Draw _TOPLX+ZX,_TOPLY+0 To _TOPLX+ZX,_TOPLY+ZY,ZZ
+      Turbo Draw _TOPLX+0,_TOPLY+ZY To _TOPLX+ZX,_TOPLY+ZY,ZZ
+
+      Turbo Draw _TOPLX+18,_TOPLY+0 To _TOPLX+ZX+24,_TOPLY+0,3
+      Turbo Draw _TOPLX+18,_TOPLY+1 To _TOPLX+ZX+24,_TOPLY+1,ZZ
+      Turbo Draw _TOPLX+18,_TOPLY+5 To _TOPLX+ZX+24,_TOPLY+5,3
+      Turbo Draw _TOPLX+18,_TOPLY+6 To _TOPLX+ZX+24,_TOPLY+6,ZZ
+
+      Turbo Draw OFFX+_TOPLX+0,_TOPLY+0 To OFFX+_TOPLX+ZX,_TOPLY+0,ZZ
+      Turbo Draw OFFX+_TOPLX+0,_TOPLY+0 To OFFX+_TOPLX+0,_TOPLY+ZY,ZZ
+      Turbo Draw OFFX+_TOPLX+ZX,_TOPLY+0 To OFFX+_TOPLX+ZX,_TOPLY+ZY,ZZ
+      Turbo Draw OFFX+_TOPLX+0,_TOPLY+ZY To OFFX+_TOPLX+ZX,_TOPLY+ZY,ZZ
+
+
+
+      OLDX=_TOPLX=LAP_ZONEX(SELECTION)
+      OLDY=_TOPLY=LAP_ZONEY(SELECTION)
+
+Return 
+
+' ---- actions for LAP COUNTER 
+PAGE12_ACTIONS:
+
+   TEMPX=LAP_ZONEX(SELECTION)
+   TEMPY=LAP_ZONEY(SELECTION)
+
+   Gosub _LAPCOUNT_ACTION
+
+   LAP_ZONEX(SELECTION)=TEMPX
+   LAP_ZONEY(SELECTION)=TEMPY
+
+   If SHIFT=1
+
+           If ACTION=7
+            Inc SELECTION
+      Else If ACTION=11
+            Dec SELECTION
+       End If 
+
+      If SELECTION>3 : SELECTION=0 : End If 
+      If SELECTION<0 : SELECTION=3 : End If 
+
+      REFRESH=True
+
+   End If 
+
+    Gosub QUITPAGE_ACTION
+
+   'PAGE=0 : REFRESH=True 
+
+Return 
+
+
+_LAPCOUNT_ACTION:
+If SHIFT=0 or SHIFT=2
+   If SHIFT=0 : MOVE=1 : End If 
+   If SHIFT=2 : MOVE=4 : End If 
+
+   If ACTION=5 : 
+      TEMPY=TEMPY-MOVE
+      REFRESH=True : End If 
+   If ACTION=6
+      TEMPY=TEMPY-MOVE
+      TEMPX=TEMPX+MOVE
+      REFRESH=True : End If 
+   If ACTION=7
+      TEMPX=TEMPX+MOVE
+      REFRESH=True : End If 
+   If ACTION=8
+      TEMPY=TEMPY+MOVE
+      TEMPX=TEMPX+MOVE
+      REFRESH=True : End If 
+   If ACTION=9
+      TEMPY=TEMPY+MOVE
+      REFRESH=True : End If 
+   If ACTION=10
+      TEMPY=TEMPY+MOVE
+      TEMPX=TEMPX-MOVE
+      REFRESH=True : End If 
+   If ACTION=11
+      TEMPX=TEMPX-MOVE
+      REFRESH=True : End If 
+   If ACTION=12
+      TEMPY=TEMPY-MOVE
+      TEMPX=TEMPX-MOVE
+      REFRESH=True : End If 
+End If 
+
+    If ACTION=97 : REFRESH=True
+      TEMPX=X Screen(X Mouse)
+      TEMPY=Y Screen(Y Mouse)
+
+    End If 
+
+Return 
+
+
+PAGE13_TEXT:
+
+     Screen FGSCR
+
+    If AIPOINTS=0
+         AIPOINTS=1
+       AIPOINTX(0)=50 : AIPOINTX(1)=75
+       AIPOINTY(0)=50 : AIPOINTY(1)=75
+       AIPOINTZ(0)=1 : AIPOINTZ(1)=1
+    End If 
+
+    If AIPOINTS>31 : AIPOINTS=31 : End If 
+
+     For L=0 To AIPOINTS-1
+
+      If AIPOINTZ(L)<1 : AIPOINTZ(L)=1 : End If 
+      If AIPOINTZ(L)>16 : AIPOINTZ(L)=16 : End If 
+
+
+      If AIPOINTZ(L)<>0
+
+              FISH=0
+              If SELECTION=L : FISH=16 : Else : FISH=0 : End If 
+
+              If L=0 : FISH=16 : End If : Rem --- green  
+              If L=AIPOINTS-1 : FISH=160+16 : End If : Rem === red
+              If SELECTION=L : FISH=160 : End If : Rem == blue    
+
+              Hot Spot 176+AIPOINTZ(L)-FISH,3,3
+              Bob 10+L,AIPOINTX(L),AIPOINTY(L),128+AIPOINTZ(L)+176-FISH
+         Else 
+            Bob Off 10+L
+         End If 
+
+
+     Next 
+
+
+   Bob Update 
+
+Return 
+'======= actions for AI placement  
+PAGE13_ACTIONS:
+
+   REFRESH=True
+
+   N=SELECTION
+
+      TEMPN=AIPOINTZ(N)
+      TEMPX=AIPOINTX(N)
+      TEMPY=AIPOINTY(N)
+
+        Gosub _POINT_EDITOR_ACTIONS_NU
+
+         If TEMPX>319 : TEMPX=319 : End If 
+         If TEMPX<0 : TEMPX=0 : End If 
+         If TEMPY<0 : TEMPY=0 : End If 
+         If TEMPY>239 : TEMPY=239 : End If 
+
+       AIPOINTZ(N)=TEMPN
+       AIPOINTX(N)=TEMPX
+       AIPOINTY(N)=TEMPY
+
+   'Next  
+
+' ==== keep all in bounds
+   If SELECTION>AIPOINTS-1 : SELECTION=0 : End If 
+   If SELECTION<0 : SELECTION=AIPOINTS-1 : End If 
+
+' ==== add / remove (both mouse buttons, then wait 
+
+   If ACTION=13
+
+   ' Key State($4e) // right  4f left 
+
+         STUR=Colour(4)
+         _PLYA2FLSH[6]
+          FLSH$=Param$
+          Flash 4,FLSH$
+
+         Repeat 
+
+             If Key State($4E) or Jright(1)
+                     ACTION=0
+
+                If AIPOINTS<31
+                AIPOINTS=AIPOINTS+1
+
+                 For ZZZ=AIPOINTS-1 To SELECTION+1 Step -1
+                      AIPOINTX(ZZZ)=AIPOINTX(ZZZ-1)
+                      AIPOINTY(ZZZ)=AIPOINTY(ZZZ-1)
+                      AIPOINTZ(ZZZ)=AIPOINTZ(ZZZ-1)
+                  Next 
+                      SELECTION=SELECTION+1
+                      AIPOINTX(SELECTION)=(((AIPOINTX(ZZZ)*6)+160)/7)
+                      AIPOINTY(SELECTION)=(((AIPOINTY(ZZZ)*6)+120)/7)
+                      AIPOINTZ(SELECTION)=AIPOINTZ(ZZZ)
+                End If 
+
+         ' remove an AI point 
+
+             Else If Key State($4F) or Jleft(1)
+                     ACTION=0
+
+                  If SELECTION<>AIPOINTS-1 and AIPOINTS>1
+
+                     For ZZZ=SELECTION To AIPOINTS-2
+                      AIPOINTX(ZZZ)=AIPOINTX(ZZZ+1)
+                      AIPOINTY(ZZZ)=AIPOINTY(ZZZ+1)
+                      AIPOINTZ(ZZZ)=AIPOINTZ(ZZZ+1)
+                     Next 
+                  End If 
+         ' -- clear the final spot, assuming we have enough of them 
+               If AIPOINTS>1
+                  AIPOINTX(CHKPOINTS-1)=0 : AIPOINTY(AIPOINTS-1)=0
+                  AIPOINTZ(CHKPOINTS-1)=0
+                  AIPOINTS=AIPOINTS-1
+                  SELECTION=SELECTION-1
+                  If SELECTION=-1 : SELECTION=AIPOINTS-1 : End If 
+                End If 
+
+            End If 
+
+         Until ACTION<>13
+         Flash Off : Colour 4,STUR
+   End If 
+
+
+
+   Gosub QUITPAGE_ACTION
+
+Return 
+'======= actions for PIT placement 
+PAGE08_ACTIONS:
+   TEMPN=CARPITSN
+   For N=0 To 3 : 
+      TEMPX(N)=CARPITSX(N)
+      TEMPY(N)=CARPITSY(N)
+   Next 
+
+   Gosub _POINT_EDITOR_ACTIONS
+
+' ==== keep all in bounds
+   If SELECTION>3 : SELECTION=0 : End If 
+   If SELECTION<0 : SELECTION=3 : End If 
+
+   CARPITSN=TEMPN
+   For N=0 To 3 : 
+      CARPITSX(N)=TEMPX(N)
+      CARPITSY(N)=TEMPY(N)
+   Next 
+
+Return 
+
+'======= actions for START placement 
+PAGE07_ACTIONS_OLD:
+   TEMPN=CARPLACEN
+   For N=0 To 3 : 
+      TEMPX(N)=CARPLACEX(N)
+      TEMPY(N)=CARPLACEY(N)
+
+      Gosub _POINT_EDITOR_ACTIONS
+   Next 
+
+
+' ==== keep all in bounds
+   If SELECTION>3 : SELECTION=0 : End If 
+   If SELECTION<0 : SELECTION=3 : End If 
+
+'======
+   If TEMPX(SELECTION)>319 : TEMPX(SELECTION)=319 : REFRESH=True : End If 
+   If TEMPX(SELECTION)<0 : TEMPX(SELECTION)=0 : REFRESH=True : End If 
+   If TEMPY(SELECTION)<0 : TEMPY(SELECTION)=0 : REFRESH=True : End If 
+   If TEMPY(SELECTION)>239 : TEMPY(SELECTION)=239 : REFRESH=True : End If 
+
+   CARPLACEN=TEMPN
+   For N=0 To 3 : 
+      CARPLACEX(N)=TEMPX(N)
+      CARPLACEY(N)=TEMPY(N)
+   Next 
+
+Return 
+
+
+PAGE07_ACTIONS:
+   TEMPN=CARPLACEN
+
+   'For N=0 To 3
+   N=SELECTION
+      TEMPX=CARPLACEX(N)
+      TEMPY=CARPLACEY(N)
+
+        Gosub _POINT_EDITOR_ACTIONS_NU
+
+         If TEMPX>319 : TEMPX=319 : End If 
+         If TEMPX<0 : TEMPX=0 : End If 
+         If TEMPY<0 : TEMPY=0 : End If 
+         If TEMPY>239 : TEMPY=239 : End If 
+
+       CARPLACEN=TEMPN
+       CARPLACEX(N)=TEMPX
+       CARPLACEY(N)=TEMPY
+
+   'Next  
+
+' ==== keep all in bounds
+   If SELECTION>3 : SELECTION=0 : End If 
+   If SELECTION<0 : SELECTION=3 : End If 
+
+Return 
+
+_POINT_EDITOR_ACTIONS_NU:
+
+   ' move with nothing held = move icon 
+
+If SHIFT=0 or SHIFT=2
+   If SHIFT=0 : MOVE=1 : End If 
+   If SHIFT=2 : MOVE=4 : End If 
+
+   If ACTION=5 : 
+      TEMPY=TEMPY-MOVE
+      REFRESH=True : End If 
+   If ACTION=6
+      TEMPY=TEMPY-MOVE
+      TEMPX=TEMPX+MOVE
+      REFRESH=True : End If 
+   If ACTION=7
+      TEMPX=TEMPX+MOVE
+      REFRESH=True : End If 
+   If ACTION=8
+      TEMPY=TEMPY+MOVE
+      TEMPX=TEMPX+MOVE
+      REFRESH=True : End If 
+   If ACTION=9
+      TEMPY=TEMPY+MOVE
+      REFRESH=True : End If 
+   If ACTION=10
+      TEMPY=TEMPY+MOVE
+      TEMPX=TEMPX-MOVE
+      REFRESH=True : End If 
+   If ACTION=11
+      TEMPX=TEMPX-MOVE
+      REFRESH=True : End If 
+   If ACTION=12
+      TEMPY=TEMPY-MOVE
+      TEMPX=TEMPX-MOVE
+      REFRESH=True : End If 
+End If 
+
+    If ACTION=97 : REFRESH=True
+      TEMPX=X Screen(X Mouse)
+      TEMPY=Y Screen(Y Mouse)
+    End If 
+
+   ' move left/right with fire held - rotate  
+   If ACTION=7 and SHIFT=1 : Inc TEMPN : REFRESH=True : End If 
+   If ACTION=11 and SHIFT=1 : Dec TEMPN : REFRESH=True : End If 
+      If TEMPN<1 : TEMPN=16 : End If 
+      If TEMPN>16 : TEMPN=1 : End If 
+
+
+   ' move up/down with fire held - rotate 
+   If(ACTION=5 and SHIFT=1) or ACTION=98 : Inc SELECTION : REFRESH=True : End If 
+   If ACTION=9 and SHIFT=1 : Dec SELECTION : REFRESH=True : End If 
+
+Return 
+
+_POINT_EDITOR_ACTIONS:
+   ' move with nothing held = move icon 
+
+If SHIFT=0 or SHIFT=2
+   If SHIFT=0 : MOVE=1 : End If 
+   If SHIFT=2 : MOVE=4 : End If 
+
+   If ACTION=5 : 
+      TEMPY(SELECTION)=TEMPY(SELECTION)-MOVE
+      REFRESH=True : End If 
+   If ACTION=6
+      TEMPY(SELECTION)=TEMPY(SELECTION)-MOVE
+      TEMPX(SELECTION)=TEMPX(SELECTION)+MOVE
+      REFRESH=True : End If 
+   If ACTION=7
+      TEMPX(SELECTION)=TEMPX(SELECTION)+MOVE
+      REFRESH=True : End If 
+   If ACTION=8
+      TEMPY(SELECTION)=TEMPY(SELECTION)+MOVE
+      TEMPX(SELECTION)=TEMPX(SELECTION)+MOVE
+      REFRESH=True : End If 
+   If ACTION=9
+      TEMPY(SELECTION)=TEMPY(SELECTION)+MOVE
+      REFRESH=True : End If 
+   If ACTION=10
+      TEMPY(SELECTION)=TEMPY(SELECTION)+MOVE
+      TEMPX(SELECTION)=TEMPX(SELECTION)-MOVE
+      REFRESH=True : End If 
+   If ACTION=11
+      TEMPX(SELECTION)=TEMPX(SELECTION)-MOVE
+      REFRESH=True : End If 
+   If ACTION=12
+      TEMPY(SELECTION)=TEMPY(SELECTION)-MOVE
+      TEMPX(SELECTION)=TEMPX(SELECTION)-MOVE
+      REFRESH=True : End If 
+End If 
+
+    If ACTION=97 : REFRESH=True
+      TEMPX(SELECTION)=X Screen(X Mouse)
+      TEMPY(SELECTION)=Y Screen(Y Mouse)
+    End If 
+
+   ' move left/right with fire held - rotate  
+   If ACTION=7 and SHIFT=1 : Inc TEMPN : REFRESH=True : End If 
+   If ACTION=11 and SHIFT=1 : Dec TEMPN : REFRESH=True : End If 
+      If TEMPN<1 : TEMPN=16 : End If 
+      If TEMPN>16 : TEMPN=1 : End If 
+
+   ' move up/down with fire held - rotate 
+   If(ACTION=5 and SHIFT=1) or ACTION=98 : Inc SELECTION : REFRESH=True : End If 
+   If ACTION=9 and SHIFT=1 : Dec SELECTION : REFRESH=True : End If 
+
+' ==== keep all in bounds
+ '  If SELECTION>3 : SELECTION=0 : End If 
+ '  If SELECTION<0 : SELECTION=3 : End If 
+
+
+
+   Gosub QUITPAGE_ACTION
+
+Return 
+
+
+PAGE13_INPUT:
+PAGE12_INPUT:
+PAGE10_INPUT:
+PAGE11_INPUT:
+PAGE09_INPUT:
+PAGE08_INPUT:
+PAGE07_INPUT:
+  Gosub _KEYS_GET
+    Gosub _INPPY_GET
+
+  If K$="Q" or Btst(10,INPPY)=True : ACTION=99 : REFRESH=True : End If 
+
+     SHIFT=0
+  If Btst(4,INPPY)=True : SHIFT=1 : End If 
+  If Btst(5,INPPY)=True : SHIFT=2 : End If 
+
+  If Btst(4,INPPY)=True and Btst(5,INPPY)=True : ACTION=13 : End If 
+
+
+' directional X
+  If Btst(0,INPPY)=True and Btst(3,INPPY)=False : ACTION=6 : End If 
+  If Btst(3,INPPY)=True and Btst(1,INPPY)=False : ACTION=8 : End If 
+  If Btst(2,INPPY)=True and Btst(1,INPPY)=False : ACTION=10 : End If 
+  If Btst(2,INPPY)=True and Btst(0,INPPY)=False : ACTION=12 : End If 
+
+' directional +
+  If Btst(0,INPPY)=True : ACTION=5 : End If 
+  If Btst(1,INPPY)=True : ACTION=9 : End If 
+  If Btst(2,INPPY)=True : ACTION=11 : End If 
+  If Btst(3,INPPY)=True : ACTION=7 : End If 
+
+' mouse
+   If USEMOUSE=True and Btst(11,INPPY)=True : ACTION=97 : REFRESH=True : End If 
+   If USEMOUSE=True and Btst(12,INPPY)=True : ACTION=98 : REFRESH=True : End If 
+
+
+Return 
+
+
+_TRACK_BACK_ONLY:
+
+
+   Auto View Off 
+   Rem Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Wait Vbl 
+
+   Screen Open BKSCR,320,240,16,Lowres : Screen Hide BKSCR : Flash Off 
+   Screen Open FGSCR,320,240,8,Lowres : Screen Hide FGSCR
+
+
+   Auto View Off 
+
+   Screen BKSCR : Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+   Unpack 12 To FGSCR : Wait Vbl : Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Rem Palette $0,$333,$666,$999,$459,$960,$830,$60,$0,$444,$999,$CCC,$7D,$DB1,$D02,$B0 : Rem ,Z(0),Z(1),Z(2),Z(3),Z(4),Z(5),Z(6),Z(7),Z(8),Z(9),Z(10),Z(11),Z(12),Z(13),Z(14),Z(15)  
+   Screen Hide FGSCR
+
+   Screen Copy FGSCR,0,0,320,240 To BKSCR,0,0
+
+   Screen Open FGSCR,320,240,16,Lowres : Screen Hide FGSCR
+   Screen Copy BKSCR,0,0,320,240 To FGSCR,0,0
+
+   Auto View On : Wait Vbl 
+   Screen To Front BKSCR
+   Screen Show BKSCR
+   Screen BKSCR
+
+   View : Wait Vbl 
+   Fade 1,$0,$333,$666,$999,$459,$960,$830,$60,$0,$944,$345,$CCC,$F36,$494,$67A,$499 : Rem ,Z(0),Z(1),Z(2),Z(3),Z(4),Z(5),Z(6),Z(7),Z(8),Z(9),Z(10),Z(11),Z(12),Z(13),Z(14),Z(15) 
+   Flash 14,"(8EE,4)(7DD,4)(7EE,4)(8FF,4)"
+   Colour 10,$222
+
+   Colour 17,$FFF : Colour 18,$DDD : Colour 19,$AAA
+
+   If USEMOUSE=False : Hide 
+   Else : Wait Vbl : Change Mouse 2 : Sprite Update : Show : Show : Wait Vbl : End If 
+
+Return 
+
+_TRACK_VIEW_FULL:
+
+   Rem Screen Copy Physic(MSCR) To Logic(4) 
+
+   Auto View Off 
+   Rem Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Wait Vbl 
+
+   Screen Open BKSCR,320,240,8,Lowres : Screen Hide BKSCR
+   Screen Open FGSCR,320,240,8,Lowres : Screen Hide FGSCR
+
+   Auto View Off 
+   Unpack 12 To BKSCR : Wait Vbl : Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+   Unpack 13 To FGSCR : Wait Vbl : Palette $0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,$0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+   Auto View On : Wait Vbl 
+   Dual Playfield FGSCR,BKSCR
+   Sprite Priority 0
+
+   View : Wait Vbl 
+   Fade 1,$0,$444,$999,$CCC,$7D,$DB1,$D02,$B0,$0,$333,$666,$999,$459,$960,$830,$60 : Rem ,Z(0),Z(1),Z(2),Z(3),Z(4),Z(5),Z(6),Z(7),Z(8),Z(9),Z(10),Z(11),Z(12),Z(13),Z(14),Z(15) 
+   Colour 17,$FFF : Colour 18,$DDD : Colour 19,$AAA
+
+   If USEMOUSE=False : Hide 
+   Else : Wait Vbl : Change Mouse 2 : Sprite Update : Show : Show : Wait Vbl : End If 
+
+
+Return 
+
+
+
+
+
+
+PAGE02_ACTIONS:
+Return 
+
+PAGE02_INPUT:
+Return 
+
+PAGE02_TEXT:
+Return 
+
+
+
+'=====================  LOAD TRACK / SELECTOR
+PAGE01_INPUT:
+
+   Gosub _INPPY_GET
+  FIRST=0 : LAST=18
+
+            If Btst(0,INPPY)=True : Rem up 
+            Dec SELECTED : ACTION=1 : REFRESH=True
+
+       Rem     If(SELECTED<=16 and SELECTED=>0) 
+
+            If SELECTED>TEMPCOUNT and SELECTED<17 and THISCLMN=CLMNS : SELECTED=TEMPCOUNT : End If 
+            If SELECTED=17 and CLMNS<1 : SELECTED=TEMPCOUNT : End If 
+            If SELECTED=16 : SELECTED=TEMPCOUNT : End If 
+
+
+       Else If Btst(1,INPPY)=True : Rem down   
+            Inc SELECTED : ACTION=1 : REFRESH=True
+            If SELECTED>TEMPCOUNT and SELECTED<17 : SELECTED=17 : End If 
+            If SELECTED=17 and CLMNS<1 : SELECTED=18 : End If 
+
+        End If 
+
+           If SELECTED>LAST : SELECTED=FIRST : End If 
+           If SELECTED<FIRST : SELECTED=LAST : End If 
+
+           If Btst(4,INPPY)=True : ACTION=2 : End If 
+
+Return 
+
+
+PAGE01_TEXT:
+  MSG$=""
+
+  CLMNS=COUNT/16
+  LASTCOUNT=COUNT-(CLMNS*16)
+
+  C=THISCLMN
+
+ ' For C=0 To CLMNS 
+    If C=CLMNS : TEMPCOUNT=LASTCOUNT-2 : Else : TEMPCOUNT=15 : End If 
+
+  For N=0 To TEMPCOUNT
+
+    ACTIVE=(SELECTED=N) : MYTEXT$=FOLDER$((C*16)+N)
+    MYX=-1 : MYY=(N*10)+48 : MYDELAY=0 : Gosub SMALLTYPE
+
+   If N>COUNT Then Exit 
+  Next 
+ ' Next 
+
+   If CLMNS>0
+     ACTIVE=(SELECTED=17) : MYTEXT$="[NEXT]"
+     MYX=-1 : MYY=(17*10)+64 : MYDELAY=0 : Gosub SMALLTYPE
+   End If 
+
+    ACTIVE=(SELECTED=18) : MYTEXT$="[CANCEL]"
+    MYX=-1 : MYY=(18*10)+64 : MYDELAY=0 : Gosub SMALLTYPE
+
+Return 
+
+
+PAGE01_ACTIONS:
+   MSG$=""
+
+Rem Screen Open 0,320,200,16,Lowres
+
+      If SELECTED=>0 and SELECTED<=16 : Rem - Load a Track 
+
+
+         If FOLDER$((THISCLMN*16)+SELECTED)<>""
+            TRACKFILE$=FOLDER$((THISCLMN*16)+SELECTED)
+            Gosub _FILE_HEALTH
+            Gosub _LOAD_TRACK
+
+            MSG$="LOADING "+TRACKFILE$
+            PAGE=0 : SELECTED=2
+         End If 
+
+       REFRESH=True
+
+
+ Else If SELECTED=17 : 
+
+      ' THISCLMN=(THISCLMN+1) mod CLMNS+1
+       Inc THISCLMN : If THISCLMN>CLMNS : THISCLMN=0 : End If 
+
+       REFRESH=True
+
+ Else If SELECTED=18
+       PAGE=0 : SELECTED=2 : REFRESH=True
+  End If 
+Return 
+
+
+PAGE00_ACTIONS:
+    MSG$=""
+    REFRESH=True
+
+         SELECTED=MENUACTION(CULUMN,ROW)
+
+          If SELECTED=1 : Rem - new track
+         PAGE=0 : MSG$="No new yet" : REFRESH=True
+
+     Else If SELECTED=2 and TRACKPATH$<>"" : Rem - load track 
+             INDIR$=TRACKPATH$ : Gosub _LIST_FOLDERS
+             SELECTED=18 : PAGE=1 : THISCLMN=0 : REFRESH=True
+
+     Else If SELECTED=3 : Rem - save track 
+
+            PAGE=0 : MSG$="track Saved" : REFRESH=True
+
+            Gosub _FILE_HEALTH
+            Gosub _SAVE_TRACK
+
+
+
+     Else If SELECTED=4 and TRACKFILE$<>"" : Rem - edit track header / info 
+             SELECTED=0 : PAGE=3 : REFRESH=True
+
+     Else If SELECTED=4 and Length(10)=0
+             MSG$="NO DATA FILE" : REFRESH=True
+
+     Else If SELECTED=5 : Rem - import back/foreground 
+         PAGE=0 : MSG$="No import yet" : REFRESH=True
+
+
+     Else If SELECTED=6 : Rem - view background
+            If Length(12)<>0
+
+               Screen Open BKSCR,320,240,8,Lowres
+               Screen To Back BKSCR
+               Unpack 12 To BKSCR
+               PAGE=4
+
+            Else : PAGE=0 : MSG$="No background to view" : End If 
+            REFRESH=True
+
+     Else If SELECTED=7 : Rem - view foreground
+            If Length(13)<>0
+
+               Screen Open FGSCR,320,240,8,Lowres
+               Screen To Back FGSCR
+               Unpack 13 To FGSCR : Colour 0,$12
+               PAGE=5
+            Else : PAGE=0 : MSG$="No foreground to view" : End If 
+            REFRESH=True
+
+     Else If SELECTED=8 : Rem - view combined
+
+             If Length(13)<>0 and Length(12)<>0
+
+               Gosub _TRACK_VIEW_FULL
+               PAGE=6
+            Else : PAGE=0 : MSG$="No back/foreground to view" : End If 
+            REFRESH=True
+
+
+     Else If SELECTED=9 : Rem - edit surfaces
+         PAGE=0 : MSG$="No surface editor yet" : REFRESH=True
+
+
+     Else If SELECTED=12 : Rem - edit starter positions 
+
+            If Length(13)<>0 and Length(12)<>0
+                  Gosub _TRACK_VIEW_FULL
+                  PAGE=7 : SELECTION=0
+            Else : PAGE=0 : MSG$="No track back/foreground" : End If 
+
+
+     Else If SELECTED=13 : Rem - edit lap count positions 
+
+   '      PAGE=0 : MSG$="No lap editor yet" : REFRESH=True
+
+            If Length(13)<>0 and Length(12)<>0
+                  Gosub _TRACK_BACK_ONLY
+                  PAGE=12 : SELECTION=0
+            Else : PAGE=0 : MSG$="No track back/foreground" : End If 
+
+
+     Else If SELECTED=14 : Rem - pit markers  
+
+            If Length(13)<>0 and Length(12)<>0
+                  Gosub _TRACK_VIEW_FULL
+                  PAGE=8 : SELECTION=0
+            Else : PAGE=0 : MSG$="No track back/foreground" : End If 
+
+
+     Else If SELECTED=15 : Rem - edit pit zone
+
+             REFRESH=True
+            If Length(13)<>0 and Length(12)<>0
+                  Gosub _TRACK_BACK_ONLY
+                  PAGE=9 : SELECTION=0
+            Else : PAGE=0 : MSG$="No track back/foreground" : End If 
+
+
+     Else If SELECTED=16 : Rem - edit xover zone
+
+            REFRESH=True
+            If Length(13)<>0 and Length(12)<>0
+                  Gosub _TRACK_BACK_ONLY
+
+                  Screen BKSCR : Wait Vbl 
+                  Colour 13,$980 : Colour 6,$F49
+                  Colour 15,$988 : Colour 9,$333
+                  Wait Vbl 
+
+                  PAGE=10 : SELECTION=0
+            Else : PAGE=0 : MSG$="No track back/foreground" : End If 
+
+     Else If SELECTED=17 : Rem - edit checkpoint ZONES
+
+            REFRESH=True
+            If Length(13)<>0 and Length(12)<>0
+                  Gosub _TRACK_BACK_ONLY
+                  PAGE=11 : SELECTION=0
+            Else : PAGE=0 : MSG$="No track back/foreground" : End If 
+
+     Else If SELECTED=18 : Rem - edit ai positions  
+
+            If Length(13)<>0 and Length(12)<>0
+                  Gosub _TRACK_VIEW_FULL
+                  PAGE=13 : SELECTION=0
+            Else : PAGE=0 : MSG$="No track back/foreground" : End If 
+
+         Rem PAGE=13 : MSG$="No a.i editor yet" : REFRESH=True
+
+      End If 
+
+Return 
+
+
+
+' PAGE 0 - MAIN MENU 
+PAGE00_INPUT:
+
+   SELECTED=((ROW*CULUMNS)+CULUMN)
+
+   Gosub _INPPY_GET
+   FIRST=0 : LAST=17
+
+   MOVE=0
+
+         If Btst(0,INPPY)=True : Rem up   
+               MOVE=1 : ACTION=1 : REFRESH=True
+
+         Else If Btst(1,INPPY)=True : Rem dowm 
+               MOVE=2 : ACTION=1 : REFRESH=True
+
+         Else If Btst(2,INPPY)=True : Rem left   
+               MOVE=3 : ACTION=1 : REFRESH=True
+
+         Else If Btst(3,INPPY)=True : Rem right  
+               MOVE=4 : ACTION=1 : REFRESH=True
+         End If 
+
+Rem Global MENULABELS$(),MENUX(),MENUY(),MENUACTION(),MENUACTIV()
+
+_MOVELOOP:
+BADLOOP=0
+        If MOVE=4 : Rem move right   
+           Repeat 
+               CULUMN=CULUMN+1
+               If CULUMN>CULUMNS-1 : CULUMN=0 : End If 
+               Inc BADLOOP : If BADLOOP>10 : MOVE=1 : Exit : End If 
+           Until MENULABELS$(CULUMN,ROW)<>""
+        End If 
+
+        If MOVE=3 : Rem move left    
+           Repeat 
+               CULUMN=CULUMN-1
+               If CULUMN<0 : CULUMN=CULUMNS-1 : End If 
+               Inc BADLOOP : If BADLOOP>10 : MOVE=1 : Exit : End If 
+           Until MENULABELS$(CULUMN,ROW)<>""
+        End If 
+
+        If MOVE=2 : Rem move down
+           'Repeat  
+               ROW=ROW+1
+               If ROW>ROWS-1 : ROW=0 : End If 
+           '    Inc BADLOOP : If BADLOOP>10 : MOVE=3 : Exit : End If  
+           'Until MENULABELS$(CULUMN,ROW)<>"" 
+        End If 
+        If MENULABELS$(CULUMN,ROW)="" : MOVE=3 : Goto _MOVELOOP : End If 
+
+        If MOVE=1 : Rem move up
+           'Repeat  
+               ROW=ROW-1
+               If ROW<0 : ROW=ROWS-1 : End If 
+           '    Inc BADLOOP : If BADLOOP>10 : MOVE=4 : Exit : End If  
+           'Until MENULABELS$(CULUMN,ROW)<>"" 
+        End If 
+
+' escape/exit on error 
+If BADLOOP>10 or MENULABELS$(CULUMN,ROW)="" : Goto _MOVELOOP : End If 
+
+
+ '  If SELECTED>LAST : SELECTED=FIRST : End If  
+ '  If SELECTED<FIRST : SELECTED=LAST : End If  
+
+  ' FIRE BUTTON
+   If Btst(4,INPPY) : ACTION=2 : End If 
+
+Return 
+
+PAGE00_TEXT:
+
+
+Screen MSCR
+
+' part one - track 
+     If TRACKFILE$=""
+   MYTEXT$="TRACK LOADED: (NONE)"
+  Else 
+   MYTEXT$="TRACK LOADED: "+TRACKFILE$
+  End If 
+   MYX=24 : MYY=(14*4) : MYDELAY=0 : Gosub LARGETYPE
+
+
+ ' TRACK DATA (LOCATIONS.DATA)
+   ACTIVE=False : MYTEXT$="HEADER DATA / TRACK INFO"
+   MYX=25 : MYY=(14*6) : MYDELAY=0 : Gosub LARGETYPE
+
+ '  If LOCDATA=True : MYTEXT$="" : Else : MYTEXT$="(LOCATIONS MISSING)" : End If  
+ '  MYX=50 : MYY=(14*7) : MYDELAY=0 : Gosub SMALLTYPE 
+
+ '  ACTIVE=(SELECTED=3) : MYTEXT$="[EDIT]"
+ '  MYX=250 : MYY=(14*7) : MYDELAY=0 : Gosub SMALLTYPE
+
+
+' BACKGROUND / FOREGROUND
+   ACTIVE=False : MYTEXT$="BACKGROUND PICTURE"
+   MYX=25 : MYY=(14*8) : MYDELAY=0 : Gosub LARGETYPE
+
+
+ '  ACTIVE=False : If BKGDATA=True
+ '           ACTIVE=(SELECTED=5) : MYTEXT$="[BACKGROUND]" 
+ '          Else : ACTIVE=False : MYTEXT$="(BKG MISSING)" : End If  
+ '  MYX=50 : MYY=(14*9) : MYDELAY=0 : Gosub SMALLTYPE 
+
+ '  ACTIVE=False : If FGDDATA=True : MYTEXT$="" 
+ '           ACTIVE=(SELECTED=6) : MYTEXT$="[FOREGROUND]" 
+ '          Else : ACTIVE=False : MYTEXT$="(FGD MISSING)" : End If  
+ '  MYX=150 : MYY=(14*9) : MYDELAY=0 : Gosub SMALLTYPE
+
+ '  ACTIVE=False : If FGDDATA=True and BKGDATA=True : MYTEXT$=""
+ '           ACTIVE=(SELECTED=7) : MYTEXT$="[FULL]" 
+ '          Else : ACTIVE=False : MYTEXT$="" : End If 
+ '  MYX=250 : MYY=(14*9) : MYDELAY=0 : Gosub SMALLTYPE
+
+
+ ' SURFACES MAP 
+   ACTIVE=False : MYTEXT$="TRACK/COLLISION MAP"
+   MYX=25 : MYY=(14*11) : MYDELAY=0 : Gosub LARGETYPE
+
+'   ACTIVE=False : If SUFDATA=True : MYTEXT$="" : Else : MYTEXT$="(SURFACES MISSING)" : End If 
+'   MYX=50 : MYY=(14*12) : MYDELAY=0 : Gosub SMALLTYPE 
+
+' TRACK ZONES, ROUTES
+   ACTIVE=False : MYTEXT$="TRACK MARKERS AND ZONES"
+   MYX=25 : MYY=(14*13) : MYDELAY=0 : Gosub LARGETYPE
+
+ '  ACTIVE=False : If LOCDATA=True : MYTEXT$="" : Else : MYTEXT$="(LOCATIONS MISSING)" : End If 
+ '  MYX=50 : MYY=(14*14) : MYDELAY=0 : Gosub SMALLTYPE
+
+
+ '  ACTIVE=(SELECTED=9) : MYTEXT$="[PREV]"
+ '  MYX=15 : MYY=(14*17) : MYDELAY=0 : Gosub SMALLTYPE
+
+ '  ACTIVE=(SELECTED=9) : MYTEXT$="[NEXT]"
+ '  MYX=320-15-(6*8) : MYY=(14*17) : MYDELAY=0 : Gosub SMALLTYPE
+
+
+    ACTIVE=False : MYTEXT$=MSG$
+    MYX=-1 : MYY=(14*17) : MYDELAY=0 : Gosub SMALLTYPE
+
+Rem Global MENULABELS$(),MENUX(),MENUY(),MENUACTION(),MENUACTIV()
+
+ SELECTED=((CULUMNS*ROW)+CULUMN)
+ For XX=0 To CULUMNS-1
+ For YY=0 To ROWS-1
+     ' ACTIVE=False 
+     ' If MENUACTIV(XX,YY)=True 
+
+       ACTIVE=(((YY*CULUMNS)+XX)=SELECTED)
+
+     ' End If 
+      Rem ACTIVE=True
+      ' also if its an active item (if not, dont allow it to be selected)
+
+       MYTEXT$=MENULABELS$(XX,YY)
+      If MYTEXT$<>""
+          MYX=MENUX(XX,YY)
+          MYY=MENUY(XX,YY)
+          MYDELAY=0 : Gosub SMALLTYPE
+      End If 
+   Next 
+   Next 
+
+Return 
+
+_INPPY_GET:
+    INPPY=Joy(1)
+      If Key State($4C)=True Then Bset 0,INPPY
+      If Key State($4D)=True Then Bset 1,INPPY
+      If Key State($4F)=True Then Bset 2,INPPY
+      If Key State($4E)=True Then Bset 3,INPPY
+      If Key State($44)=True or Key State($40)=True Then Bset 4,INPPY
+      If Key State($61)=True or Key State($60)=True Then Bset 5,INPPY
+
+      If Xfire(1,1)=True Then Bset 5,INPPY
+
+     Rem .. If Xfire(0,0)=True Then Bset 4,INPPY
+
+      ' RMB
+      If Xfire(0,1)=True Then Bset 12,INPPY
+      ' LMB
+      If Xfire(0,0)=True Then Bset 11,INPPY
+
+
+      If Xfire(1,6)=True or Key State($45) Then Bset 10,INPPY
+
+      If Fire(1)=False and Key State($44)=False and Key State($40)=False
+         Bclr 4,INPPY
+      End If 
+
+
+      Clear Key 
+
+Return 
+
+_LIST_FOLDERS:
+
+Rem  Screen Open 0,320,200,4,Lowres  
+  Examine Dir(INDIR$) : COUNT=0
+  Repeat 
+    A$=Examine Next$
+    If A$<>"" and Object Type=2 Then Inc COUNT
+    If COUNT=1000 : Exit : End If 
+  Until A$=""
+
+
+  Examine Dir(INDIR$) : COUNT=0
+  Repeat 
+    A$=Examine Next$
+    If Object Type=2 : FOLDER$(COUNT)=A$ : Inc COUNT : End If 
+  Until A$=""
+
+
+Return 
+
+
+
+_SAVE_TRACK:
+
+
+Wait Vbl : Auto View Off : Wait Vbl 
+
+    SHUR=Colour(11)
+   _PLYA2FLSH[6]
+    FLSH$=Param$
+    Flash 11,FLSH$
+    Wait 50
+
+' 10 = LOCATIONS.DATA
+' 11 = SURFACES.MAP
+' 12 = BACKGROUND.IFF  
+' 13 = FOREGROUND.IFF
+
+Gosub _TRACK_DATA_PUSH
+
+' LOCATION DATA
+  A$=TRACKPATH$+TRACKFILE$+"/"+"locations.data"
+  Bank Name 10,"TrackDta"
+  If Length(10)>0 : Wsave A$,10 : End If 
+
+' SURFACE DATA 
+ A$=TRACKPATH$+TRACKFILE$+"/"+"surfaces.map"
+ If Length(11)>0 : Wsave A$,11 : Bank Name 11,"SurfcDta" : End If 
+ A$=TRACKPATH$+TRACKFILE$+"/"+"surfaces.mpp"
+ If Length(11)>0 : Pptodisk A$,11 : Bank Name 11,"SurfcDta" : End If 
+
+
+
+' BACKGROUND PICTURE 
+ A$=TRACKPATH$+TRACKFILE$+"/"+"background.iff"
+ If Length(12)>0
+   Unpack 12 To BKSCR : Screen Hide BKSCR
+   Screen BKSCR : Save Iff A$ : Wait 2
+   Bank Name 12,"BakgdPac"
+ End If 
+
+ A$=TRACKPATH$+TRACKFILE$+"/"+"background.pac"
+ If Length(12)>0
+   Wsave A$,12 : Wait 2
+   Screen Hide BKSCR
+   Bank Name 12,"BakgdPac"
+ End If 
+ Wait Vbl 
+ Screen Close BKSCR
+
+
+' FOREGROUND PICTURE 
+ A$=TRACKPATH$+TRACKFILE$+"/"+"foreground.iff"
+ If Length(13)>0
+   Unpack 13 To FGSCR : Screen Hide FGSCR
+   Screen FGSCR : Save Iff A$ : Wait 2
+   Bank Name 13,"ForgdPac"
+ End If 
+
+ A$=TRACKPATH$+TRACKFILE$+"/"+"foreground.pac"
+ If Length(13)>0
+   Wsave A$,13 : Wait 2
+   Screen Hide FGSCR
+   Bank Name 13,"ForgdPac"
+ End If 
+
+ Wait Vbl 
+ Screen Close FGSCR
+
+
+Flash Off 
+Colour 11,SHUR
+
+
+Return 
+
+_LOAD_TRACK:
+
+Wait Vbl : Auto View Off : Wait Vbl 
+
+' 10 = LOCATIONS.DATA
+' 11 = SURFACES.MAP
+' 12 = BACKGROUND.IFF  
+' 13 = FOREGROUND.IFF
+
+' LOCATION DATA
+ Erase 10
+ A$=TRACKPATH$+TRACKFILE$+"/"+"locations.data"
+ If Exist(A$) : Wload A$,10 : Bank Name 10,"TrackDta" : End If 
+
+' SURFACE DATA 
+ Erase 11
+ A$=TRACKPATH$+TRACKFILE$+"/"+"surfaces.map"
+ If Exist(A$) : Wload A$,11 : Bank Name 11,"SurfcDta" : End If 
+ A$=TRACKPATH$+TRACKFILE$+"/"+"surfaces.mpp"
+ If Exist(A$) and Length(11)=0 : Ppfromdisk A$,11 : Bank Name 11,"SurfcDta" : End If 
+
+' BACKGROUND PICTURE 
+ Erase 12
+ A$=TRACKPATH$+TRACKFILE$+"/"+"background.iff"
+ If Exist(A$)
+   Load Iff A$,BKSCR : Screen Hide BKSCR
+   Spack BKSCR To 12
+   Bank Name 12,"BakgdPac"
+ End If 
+ A$=TRACKPATH$+TRACKFILE$+"/"+"background.pac"
+ If Exist(A$) and Length(12)=0
+   Wload A$,12
+   Unpack 12 To BKSCR : Screen Hide BKSCR
+   Bank Name 12,"BakgdPac"
+ End If 
+ Screen Close BKSCR
+
+' FOREGROUND PICTURE 
+ Erase 13
+ A$=TRACKPATH$+TRACKFILE$+"/"+"foreground.iff"
+ If Exist(A$)
+   Load Iff A$,FGSCR : Screen Hide FGSCR
+   Spack FGSCR To 13
+   Bank Name 13,"ForgdPac"
+ End If 
+ A$=TRACKPATH$+TRACKFILE$+"/"+"foreground.pac"
+ If Exist(A$) and Length(13)=0
+   Wload A$,13
+   Unpack 13 To FGSCR : Screen Hide FGSCR
+   Bank Name 13,"ForgdPac"
+ End If 
+
+Screen Close FGSCR
+
+
+Gosub TRACK_DATA_READ
+
+
+Return 
+
+
+_FILE_HEALTH:
+
+' track folder OK
+If Exist(TRACKPATH$)=False or TRACKPATH$=""
+ TRACKPATH$=""
+ MSG$="No tracks folder found" : REFRESH=True : ACTION=0 : Return 
+End If 
+
+If Right$(TRACKPATH$,1)<>"/" Then TRACKPATH$=TRACKPATH$+"/"
+
+If Exist(TRACKPATH$+TRACKFILE$)=False
+ TRACKFILE$=""
+End If 
+
+' loaded a track?
+If TRACKFILE$=""
+ MSG$="No track loaded" : REFRESH=True : ACTION=0 : Return 
+End If 
+
+
+' files in folder
+
+LOCDATA=Exist(TRACKPATH$+TRACKFILE$+"/locations.data")
+SUFDATA=Exist(TRACKPATH$+TRACKFILE$+"/surfaces.map")
+BKGDATA=Exist(TRACKPATH$+TRACKFILE$+"/background.iff") or Exist(TRACKPATH$+"/background.pac")
+FGDDATA=Exist(TRACKPATH$+TRACKFILE$+"/foreground.iff") or Exist(TRACKPATH$+"/foreground.pac")
+
+
+Return 
+
+
+_GET_TRACK_TYPE:
+ TRACKTYPE$="UNKNOWN"
+
+        If TRACK_TYPE=0 : TRACKTYPE$="CLASSIC RACE COURSE"
+   Else If TRACK_TYPE=1 : TRACKTYPE$="SEMI-PERMANENT STREET CIRCUIT"
+   Else If TRACK_TYPE=2 : TRACKTYPE$="NIGHT RACE"
+   Else If TRACK_TYPE=3 : TRACKTYPE$="TEMPORARY STREET CIRCUIT"
+   Else If TRACK_TYPE=4 : TRACKTYPE$="OVAL COURSE"
+   Else If TRACK_TYPE=5 : TRACKTYPE$="SPEEDWAY"
+   Else If TRACK_TYPE=6 : TRACKTYPE$="CROSS COUNTRY RALLY"
+   Else If TRACK_TYPE=7 : TRACKTYPE$="ROADCOURSE RALLY"
+   End If 
+Return 
+
+'================================================
+
+_GETCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+   A=0
+   L=$FFF
+   Return 
+
+_GETLOWCOLOURFADE:
+   A=PALSTORE(0) : B=PALSTORE(1) : C=PALSTORE(2) : D=PALSTORE(3)
+   E=PALSTORE(4) : F=PALSTORE(5) : G=PALSTORE(6) : H=PALSTORE(7)
+   I=PALSTORE(8) : J=PALSTORE(9) : K=PALSTORE(10) : L=PALSTORE(11)
+   M=PALSTORE(12) : N=PALSTORE(13) : O=PALSTORE(14) : P=PALSTORE(15)
+   Q=PALSTORE(16) : R=PALSTORE(17) : S=PALSTORE(18) : T=PALSTORE(19)
+   U=PALSTORE(20) : V=PALSTORE(21) : W=PALSTORE(22) : X=PALSTORE(23)
+   Y=PALSTORE(24) : Z=PALSTORE(25) : AA=PALSTORE(26) : BB=PALSTORE(27)
+   CC=PALSTORE(28) : DD=PALSTORE(29) : EE=PALSTORE(30) : FF=PALSTORE(31)
+
+      A=Mix Colour(A,0) : B=Mix Colour(B,0)
+      C=Mix Colour(C,0) : D=Mix Colour(D,0)
+      E=Mix Colour(E,0) : F=Mix Colour(F,0)
+      G=Mix Colour(G,0) : H=Mix Colour(H,0)
+      I=Mix Colour(I,0) : J=Mix Colour(J,0)
+      K=Mix Colour(K,0) : L=Mix Colour(L,0)
+      M=Mix Colour(M,0) : N=Mix Colour(N,0)
+      P=Mix Colour(P,0) : O=Mix Colour(O,0)
+
+      Q=Mix Colour(Q,0) : R=Mix Colour(R,0)
+      S=Mix Colour(S,0) : T=Mix Colour(T,0)
+      U=Mix Colour(U,0) : V=Mix Colour(V,0)
+      W=Mix Colour(W,0) : FF=Mix Colour(FF,0)
+
+      X=Mix Colour(X,0) : Y=Mix Colour(Y,0)
+      Z=Mix Colour(Z,0) : AA=Mix Colour(AA,0)
+      BB=Mix Colour(BB,0) : CC=Mix Colour(CC,0)
+      DD=Mix Colour(DD,0) : EE=Mix Colour(EE,0)
+
+
+   A=0
+   L=$FFF
+
+
+   Return 
+
+_GETBLUEFADE:
+   A=PALSTORE2(0) : B=PALSTORE2(1) : C=PALSTORE2(2) : D=PALSTORE2(3)
+   E=PALSTORE2(4) : F=PALSTORE2(5) : G=PALSTORE2(6) : H=PALSTORE2(7)
+   I=PALSTORE2(8) : J=PALSTORE2(9) : K=PALSTORE2(10) : L=PALSTORE2(11)
+   M=PALSTORE2(12) : N=PALSTORE2(13) : O=PALSTORE2(14) : P=PALSTORE2(15)
+   Q=PALSTORE2(16) : R=PALSTORE2(17) : S=PALSTORE2(18) : T=PALSTORE2(19)
+   U=PALSTORE2(20) : V=PALSTORE2(21) : W=PALSTORE2(22) : X=PALSTORE2(23)
+   Y=PALSTORE2(24) : Z=PALSTORE2(25) : AA=PALSTORE2(26) : BB=PALSTORE2(27)
+   CC=PALSTORE2(28) : DD=PALSTORE2(29) : EE=PALSTORE2(30) : FF=PALSTORE2(31)
+   A=0
+Rem      Colour 11,$FFF : Rem - text (regular) 
+   L=$FFF
+
+   Return 
+
+SMALLTYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*3)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY
+   DIGIT=0
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR-31
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+
+Rem >> Screen 0
+
+Rem >>>     If CHAR<>1 Then Paste Bob MYX+(DIGIT*6),MYY,CHAR 
+
+      If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*6),MYY,CHAR-(ACTIVE*160)
+      If MYDELAY>0 and CHAR<>1 Then Wait MYDELAY
+
+Rem >>      View 
+     DESTX=DESTX+8 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+SKIPPY:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+
+Return 
+
+LARGETYPE:
+   If MYX=-1 Then MYX=160-(Len(MYTEXT$)*4)
+   If Len(MYTEXT$)<1 Then Goto SKIPPY2
+   DIGIT=0 : MYTEXT$=Upper$(MYTEXT$)
+   Repeat 
+     CHAR=Asc(Left$(MYTEXT$,1))
+     CHAR=CHAR+256+33
+       If Len(MYTEXT$)>1
+         MYTEXT$=Right$(MYTEXT$,Len(MYTEXT$)-1)
+       Else 
+         MYTEXT$=""
+       End If 
+Rem >>     Screen 0
+     If CHAR<>1 Then Blitter Wait : Paste Bob MYX+(DIGIT*8),MYY,CHAR-(ACTIVE*160)
+
+ Rem >>    Paste Bob MYX+(DIGIT*8),MYY,CHAR 
+      If MYDELAY>0 Then Wait MYDELAY
+Rem >>      View 
+     DESTX=DESTX+10 : Inc DIGIT
+   Until Len(MYTEXT$)<1
+ SKIPPY2:
+   MYX=0 : MYY=0 : MYTEXT$="" : MYDELAY=False
+Return 
+
+End Proc
+
+
+
+
+Procedure _PLYA2FLSH[PLYA]
+
+Procedure _WAIT_ACTIVE_PLAYER[TIMELIMIT,PLYA]
+Procedure UNPACPIC[INNAME$,SCRNUMB]
+Procedure _GETFONT
+
+Procedure _SPLIT_PICTURE[INFILE$,TRACKPATH$,TRACKFILE$]
+
+Procedure FINDCOUNTRY[COUNTRY_NUMBER]

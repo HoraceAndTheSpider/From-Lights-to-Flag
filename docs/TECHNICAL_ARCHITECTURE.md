@@ -1,6 +1,6 @@
 # Technical Architecture
 
-Status: **PROVISIONAL architecture baseline — no engine code is yet claimed as runtime-proven.**
+Status: **PROVISIONAL FLTF architecture; race-core recovery approach is now a firm project requirement.**
 
 ## 1. Platform baseline
 
@@ -9,184 +9,211 @@ Target a stock PAL A1200 first:
 - 68EC020 CPU;
 - AGA chipset;
 - 2 MB Chip RAM only;
-- 50 Hz game update target;
-- standard AmigaDOS launch for early development and HDD compatibility.
+- 50 Hz primary update target;
+- standard HDD/AmigaDOS development path plus floppy release support.
 
-Avoid dependencies on Fast RAM, FPU, RTG, later CPUs or accelerator-specific timing.
+Do not assume Fast RAM, FPU, RTG, later CPUs or accelerator timing.
 
-## 2. Display strategy
+## 2. High-level module architecture
 
-### Race display
+Treat FLTF as a set of cooperating modules around common platform services.
 
-Start performance planning around a low-resolution PAL single-screen race display, provisionally **320×256**.
+Conceptual flow:
 
-Do **not** assume that an AGA game must use eight bitplanes for racing. Eight 320×256 planes consume about 80 KiB per screen buffer before any masks, backgrounds, sprites, audio or game data are counted, and additional planes increase display DMA and blitter work.
+```text
+Boot/Common Services
+       |
+Main Menu / Mode Selection
+       |
+Pre-Race ---- Garage ---- Communications
+       |          |              |
+       +----------+--------------+
+                  |
+               Race
+                  |
+           Results/Post-Race
+                  |
+       Arcade/Championship Flow
+```
 
-A provisional race target of **5 or 6 bitplanes (32/64 colours)** is therefore preferred for the first engine milestone. AGA still provides a much larger palette and better colour control than ECS while preserving more DMA/blitter time for cars and effects.
+This is a flow model, not a dependency graph. Garage, communications, race and presentation modules must be individually testable through harnesses/direct-entry builds.
 
-Menus, garage and communications screens may use a different depth (potentially 8 bitplanes/256 colours) if profiling shows that this is useful and affordable.
+## 3. Common services
 
-### Buffering and moving objects
+Expected shared services include:
 
-The circuit is largely static while cars/objects move. A promising first implementation is:
+- startup/shutdown and OS/custom-chip ownership;
+- display/copper/blitter primitives;
+- memory management/allocation conventions;
+- 1–4 player input abstraction;
+- music/SFX;
+- logical asset/resource loading;
+- optional depacking;
+- persistence/save services;
+- global/shared game-state structures.
 
-- immutable background bitmap for the loaded circuit;
-- two displayed/draw race buffers;
-- before drawing a car into the non-visible buffer, restore the object's previous dirty rectangle in that buffer from the immutable background;
-- blitter-draw masked car/object BOBs;
-- swap buffers on vertical blank.
+Modules should call these services through stable entry points rather than each implementing their own hardware/file logic.
 
-This avoids copying the entire track bitmap every frame while keeping object rendering flexible.
+## 4. Race module: recovered Indy Heat core
 
-Hardware sprites remain available for experimentation (HUD markers, cursor, effects or possibly cars), but four car BOBs are the safer first architecture because they are not constrained by sprite pairing, width, palette allocation or multiplexing rules.
+The race module is exceptional internally because its mechanics are intended to originate from recovered Indy Heat code.
 
-## 3. Track data model
+Desired decomposition after recovery may include:
 
-Borrow the useful separation established by the Indy Heat research, but define an original project format.
+- race orchestration/state;
+- vehicle movement and handling;
+- player control interpretation;
+- AI/waypoint steering;
+- surface/environment response;
+- collision/interactions;
+- lap/checkpoint logic;
+- pits/service behaviour;
+- race timing/position/result logic;
+- track semantic-data access;
+- rendering/presentation wrappers.
 
-A loaded track package is expected to contain some or all of:
+File boundaries should follow proven dependencies rather than arbitrarily splitting original code too early.
 
-- background/race bitmap;
-- palette;
-- foreground/occlusion mask (likely 1 bpp or another compact mask);
-- surface/traction map (compact packed values rather than display pixels where possible);
-- AI waypoint/routes;
-- checkpoints/lap validation data;
-- start-grid positions and headings;
-- pit positions/route/service data;
-- lap tower/flagman/track-object positions if the selected presentation uses them;
-- minimap/map data if needed;
-- track metadata such as name, laps and event identifiers.
+### Recovery before adaptation
 
-Keep display art separate from semantic race data. The engine must not need to infer road behaviour from pixel colours at runtime.
+For a recovered subsystem:
 
-## 4. Race simulation
+1. locate the original routines/data;
+2. map calling convention and state;
+3. reconstruct labelled source;
+4. prove expected behaviour;
+5. isolate hard-coded original-game assumptions;
+6. then apply FLTF changes.
 
-The race simulation should operate in fixed-point integer maths suitable for the 68020.
+Do not alter resolution constants, coordinate spaces or state formats during initial recovery unless necessary to get a test harness running and the change is documented.
 
-Likely per-car state includes:
+## 5. Race/display coordinate separation
 
-- world/screen X/Y at sub-pixel precision;
-- heading/rotation frame;
-- velocity/speed;
-- steering input;
-- acceleration/braking state;
-- current surface;
-- route/waypoint target for AI;
-- lap/checkpoint state;
-- pit state;
-- damage/fuel/tyres/upgrades only if selected game rules require them.
+FLTF expects a larger race presentation than retail Indy Heat. The exact resolution remains open until original data assumptions and incoming art are reviewed.
 
-The exact fixed-point format and handling model remain open until the AMOS prototype and current Indy Heat findings have been reviewed together.
+Prefer to separate:
 
-## 5. Input
+- simulation/world coordinates;
+- track-data coordinates;
+- display/screen coordinates;
+- object-render coordinates.
 
-Abstract player input behind four logical controller records.
+If original Indy Heat mechanics use display coordinates directly, preserve them during recovery first, then identify and remove/parameterise those assumptions deliberately.
 
-Initial intended physical sources:
+## 6. Display strategy
+
+A provisional AGA race display remains low-resolution PAL, likely around 320×256 or another verified expanded viewport depending on the intended FLTF design and recovered engine constraints.
+
+Do not assume eight bitplanes simply because AGA supports 256 colours. Race depth should be chosen from real asset requirements and measured DMA/blitter cost. Menus, garage and communications may use different depths.
+
+Car/object rendering method is not yet frozen. The recovered Indy Heat presentation path must be understood before committing FLTF to a replacement renderer.
+
+## 7. Track/data strategy
+
+Because the race engine is being recovered, the first priority is to understand and support the actual data structures it consumes.
+
+Where practical, FLTF track packages should ultimately separate visible presentation from semantics such as:
+
+- foreground/occlusion;
+- surface/traction;
+- routes/waypoints;
+- checkpoints/lap validation;
+- start positions/headings;
+- pit/service information;
+- object/flagman/board positions;
+- metadata.
+
+However, do not prematurely invent a new format that forces unnecessary translation before the recovered engine is working. A conversion layer can bridge authored FLTF data to the recovered core.
+
+## 8. Game-state/module interfaces
+
+Each module should accept a context/input structure and return explicit output/state. Examples:
+
+- `RaceSetup` -> race module -> `RaceResult`;
+- `GarageContext` -> garage -> updated `PlayerState`/car setup;
+- `CommsContext` -> communications -> outcome/reward result;
+- `PreRaceContext` -> pre-race -> ready/selection state.
+
+Exact binary layouts will be frozen only once source work begins. See `MODULE_CONTRACTS.md`.
+
+## 9. Stand-alone test harnesses
+
+Provide direct-entry or debug harnesses where useful, for example:
+
+- race test: boot/load one track and start race immediately;
+- garage test: fabricated players/resources, no championship required;
+- communications test: select/cycle conversations directly;
+- menu test: exercise navigation without loading a race;
+- asset/display test: show a converted ILBM/palette/object set.
+
+A harness may be a build flag, alternate entry point or small wrapper executable. Prefer whichever keeps shared production code unchanged.
+
+## 10. Input
+
+Abstract input behind four logical player/controller records.
+
+Expected physical support:
 
 - joystick ports 1 and 2;
-- a conventional Amiga four-player/parallel-port joystick adapter for players 3 and 4.
+- common Amiga four-player/parallel-port adapter for players 3 and 4;
+- keyboard/debug controls during development if useful.
 
-Keyboard/debug input may be supported during development but must not be required for normal four-player play.
+The exact adapter protocol must be verified before implementation.
 
-The exact multiplayer-adapter electrical/register protocol must be verified before implementation.
+## 11. Disk/HDD loading
 
-## 6. Game-state architecture
+Use a loader abstraction so gameplay modules request logical assets without depending on media layout.
 
-Use an explicit high-level state machine. Candidate states:
+Development/HDD builds should favour straightforward files and fast loading. Floppy builds may group and/or compress resources once representative data has been benchmarked.
 
-- boot/load;
-- title/intro;
-- main menu;
-- mode/championship selection;
-- driver/team selection;
-- garage/upgrades;
-- communications;
-- track loading;
-- pre-race/grid;
-- race;
-- results;
-- championship standings/progression;
-- game over/championship complete.
+Disk 2 should behave as a content package rather than requiring a second distinct engine executable wherever practical.
 
-Each state should expose clear init/update/render/exit responsibilities or an equivalent interface. Race-specific code should not own unrelated menu/dialogue progression.
+## 12. Memory planning
 
-## 7. Disk and HDD loading
-
-Use a loader abstraction so gameplay code requests logical assets without caring whether they came from floppy or HDD.
-
-Early development should favour ordinary AmigaDOS files because this gives:
-
-- simple CLI/HDD testing;
-- easier iteration;
-- a path to standard install tools;
-- less risk than designing a custom raw-disk filesystem before content size is known.
-
-A future floppy build may use compressed payloads or grouped resource files. HDD builds should prefer uncompressed/preconverted data where that materially reduces CPU overhead and seek complexity.
-
-Do not choose a packer until representative ILBM, MOD, 8SVX and track packages can be benchmarked for size and 020 depack speed.
-
-## 8. Memory planning
-
-The 2 MB Chip RAM target makes a memory map mandatory before content grows.
-
-Track at minimum:
+A stock 2 MB Chip RAM target requires explicit budgeting for:
 
 - executable/code/data;
-- two race buffers;
-- immutable track background;
-- palette/copper list(s);
-- car/object graphics and masks;
-- foreground mask;
-- surface map;
-- waypoint/checkpoint structures;
-- audio channels/sample data;
-- music/module/player workspace;
-- decompression/load scratch buffer;
-- mode/UI assets;
-- stack and general work memory.
+- race display buffers/background;
+- recovered race-core state/data;
+- current track semantics;
+- car/object graphics;
+- UI/module assets for the current state only;
+- music/SFX/sample data;
+- loader/depack scratch;
+- stack/workspace.
 
-Prefer loading only the current track/event presentation rather than retaining multiple tracks in memory.
+Prefer state-based loading/unloading over retaining assets for unrelated modules.
 
-## 9. Audio
+## 13. Source organisation
 
-Plan separate APIs for:
+Provisional structure once coding begins:
 
-- music/module playback;
-- sound effects/8SVX-derived samples;
-- master enable/disable and state transitions.
+```text
+src/
+  main.asm
+  common/
+    constants.i
+    structs.i
+    macros.i
+    system.asm
+    display.asm
+    blitter.asm
+    input.asm
+    loader.asm
+    memory.asm
+    audio.asm
+  menu/
+  prerace/
+  garage/
+  comms/
+  race/
+    race.asm
+    recovered/
+    adapters/
+    render/
+  results/
+  championship/
+  debug/
+```
 
-A ProTracker-compatible replay routine such as a suitable P61-family player is a candidate, not yet a committed dependency. Source and licence must be checked before inclusion.
-
-8SVX authoring files should normally be converted offline to the signed 8-bit PCM and metadata expected by Paula rather than parsed as IFF during every playback operation.
-
-## 10. Timing
-
-Target one deterministic simulation update per PAL frame initially. Rendering and audio must be profiled against the 50 Hz budget.
-
-Do not make game physics depend on emulator host speed or uncalibrated busy loops. Vertical blank interrupt or equivalent frame synchronisation will be required for the finished engine.
-
-## 11. Source organisation
-
-A likely modular split once coding begins:
-
-- `main.asm` — entry point and top-level state dispatch;
-- `system.asm` — OS ownership, interrupts, shutdown;
-- `display.asm` — copper, bitplanes, buffering;
-- `blitter.asm` — common blitter helpers;
-- `input.asm` — 1–4 player input;
-- `loader.asm` — filesystem/resource loading;
-- `depack.asm` — optional packed-resource interface;
-- `audio.asm` / `music.asm` — Paula SFX and MOD playback;
-- `game_state.asm` — global mode/state transitions;
-- `race.asm` — race orchestration;
-- `car.asm` — car simulation/render data;
-- `track.asm` — track semantic data and queries;
-- `ai.asm` — waypoint/AI steering;
-- `hud.asm` — race presentation;
-- `garage.asm` — upgrades;
-- `communications.asm` — question/answer screen;
-- `championship.asm` — championship state/scoring.
-
-This is a responsibility map, not yet a frozen filename list.
+The `race/recovered/` area is intended to keep reconstructed original-engine material clearly separated from FLTF adapters/new code. Exact files will follow evidence from the actual recovery.

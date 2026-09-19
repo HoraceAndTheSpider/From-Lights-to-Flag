@@ -6,71 +6,68 @@
 
 ## Core concept
 
-A single-screen top-down Amiga racing game in the broad tradition of *Super Sprint*, *Indy Heat* and *Super Off Road*.
+A single-screen top-down Amiga racing game in the tradition of *Super Sprint*, *Indy Heat* and *Super Off Road*.
 
-Four cars race simultaneously on one circuit. The intended player count is 1–4, with computer-controlled cars filling unused positions as appropriate.
+Four cars race simultaneously. Intended player count is 1–4, with AI filling unused positions as required.
 
 ## Game modes
 
-Two high-level modes are planned.
-
 ### Arcade
 
-A faster self-contained structure. Arcade mode may differ from Championship mode in:
-
-- scoring;
-- race/lap counts;
-- upgrade availability and progression;
-- event sequence;
-- communications-screen use;
-- persistence requirements.
-
-Exact rules remain a game-design decision and should be data-driven where practical rather than compiled into unrelated engine code.
+A faster/self-contained mode which may differ from Championship in scoring, lap counts, upgrades, event sequence, communications usage and persistence.
 
 ### Championship
 
-A structured series using championship-specific data and presentation. Intended features include:
+A structured series with teams/drivers, event order, points, upgrades/progression, communications encounters and championship-specific presentation/content.
 
-- teams/drivers;
-- track/event sequence;
-- points/scoring;
-- upgrades/progression;
-- communications encounters;
-- championship-specific car graphics and other presentation assets.
+Current distribution concept:
 
-The current distribution concept is:
+- **Disk 1:** core executable, common engine/services and common presentation assets.
+- **Disk 2:** championship/content package including tracks, teams/drivers, car graphics and related data.
+- **HDD:** same logical content presented through files/directories with HDD-appropriate loading.
 
-- **Disk 1:** core game executable, common engine/data and common presentation assets.
-- **Disk 2:** championship/content data such as tracks, team/driver information and car graphics.
-- **HDD install:** the same logical content exposed through directories/files with loading optimised for hard-disk access.
-
-This split is a design target, not yet a frozen disk layout.
+The disk layout is not yet frozen.
 
 ## Communications screen
 
-A non-racing interaction screen inspired in broad structure by *Super Cars II*. The player receives a situation/question and chooses an answer. Successful responses can produce rewards or other state changes.
+A non-racing interaction inspired by the broad idea of *Super Cars II*: a situation/question with player responses and resulting rewards/penalties/state changes.
 
-The implementation should be its own game-state/module rather than race-engine special-case code. Dialogue data, answer options and outcomes should be external/data-driven where reasonable.
+Communications is its own module and should be testable independently of the race engine.
 
-## Racing-engine reference
+## Race-engine strategy
 
-The separate `Indy-Heat-WHD` reverse-engineering project is an important technical reference for:
+The race module is intended to use the **actual Indy Heat Amiga racing engine as its starting point**, not merely imitate its style.
 
-- single-screen circuit representation;
-- surface/collision data;
-- foreground/occlusion information;
-- waypoints and AI route data;
-- pits and start positions;
-- race-state and lap presentation concepts;
-- track-package/editor workflow.
+The project will recover/reconstruct the relevant Indy Heat routines and data, prove their behaviour where practical, then adapt them for FLTF. Expected recovered areas include, subject to evidence:
 
-From Lights to Flag will implement its own engine and assets. Indy Heat findings are reference evidence, not source code to transplant.
+- vehicle movement/handling;
+- steering, acceleration and deceleration;
+- car/car and car/environment interactions;
+- track/surface handling;
+- AI/waypoint behaviour;
+- checkpoints/laps;
+- pits and race-state handling;
+- race timing/position logic;
+- any other tightly coupled mechanics needed for equivalent race operation.
 
-## Existing prototype material
+FLTF changes such as increased screen resolution, revised input/player support, presentation, content packaging or game rules should be layered on after the original behaviour is understood and isolated.
 
-The owner has already prototyped a number of game elements in AMOS. These should be treated as valuable behavioural/design references when supplied. They may define screen flow, game rules or presentation more accurately than early architecture assumptions.
+## Modular development principle
 
-## Initial target
+Major areas must be independently developable and testable. Menu, pre-race, garage, communications, race, results and championship progression communicate through documented shared structures and explicit inputs/outputs.
+
+A module should not need another unfinished module merely to be exercised. Debug/direct-entry harnesses are encouraged.
+
+## Existing prototype/material
+
+The owner has:
+
+- AMOS prototype source covering a number of game elements;
+- substantial prepared data/assets to be uploaded.
+
+These materials should be inventoried before hard-coding behaviour that they may already define.
+
+## Initial hardware target
 
 Provisional baseline:
 
@@ -79,7 +76,7 @@ Provisional baseline:
 - stock 2 MB Chip RAM;
 - 68EC020;
 - PAL 50 Hz;
-- no required accelerator, Fast RAM or FPU;
-- floppy and HDD support.
+- floppy and HDD support;
+- no required accelerator, Fast RAM or FPU.
 
-Early art may originate within ECS-style colour/depth constraints and later be enhanced for AGA.
+Early graphics may be ECS-oriented before AGA enhancement.

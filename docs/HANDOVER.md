@@ -1,52 +1,83 @@
 # Handover
 
-## Current state — 18 September 2026
+## Current state — 19 September 2026
 
-This is the initial continuity pack for **From Lights to Flag**. There is no engine revision to inherit yet.
+This is the second FLTF continuity pack. It corrects the most important architectural assumption from the initial bootstrap.
 
-### Read first
+There is still **no FLTF ASM revision** to inherit yet.
+
+## Read first
 
 1. `/AGENTS.md`
 2. `docs/PROJECT_OVERVIEW.md`
 3. `docs/DEVELOPMENT_LOG.md`
-4. `docs/TECHNICAL_ARCHITECTURE.md`
-5. `docs/OPEN_DECISIONS.md`
-6. `docs/ASSET_PIPELINE.md`
-7. `docs/SOURCES_AND_PROVENANCE.md`
+4. `docs/INDY_HEAT_ENGINE_RECOVERY.md`
+5. `docs/TECHNICAL_ARCHITECTURE.md`
+6. `docs/MODULE_CONTRACTS.md`
+7. `docs/INCOMING_MATERIAL.md`
+8. `docs/OPEN_DECISIONS.md`
+9. `docs/ASSET_PIPELINE.md`
+10. `docs/SOURCES_AND_PROVENANCE.md`
 
-### Current authority
+## Critical correction from first bootstrap
 
-The owner's initial brief plus these docs define the current project intent. Once source exists, current repository source and runtime test results outrank provisional architecture prose.
+**Do not treat Indy Heat merely as inspiration/reference for a newly written race engine.**
 
-### Important project requirements
+The intended race strategy is to recover the actual original Amiga Indy Heat racing engine, reconstruct it in maintainable 68k source, prove behaviour, then adapt it for FLTF.
 
-- Game: four-car single-screen top-down racer, 1–4 players.
-- Main modes: Arcade and Championship.
-- Communications/question screen can affect player rewards/progression.
-- Likely target: stock 2 MB A1200, AGA, 68EC020, PAL 50 Hz.
-- Disk 1 core game; Disk 2 championship/content concept; HDD install supported.
-- Authoring assets: ILBM, 8SVX and MOD.
-- Use Indy Heat research as a reference for track/race mechanics, not as code/assets to redistribute.
-- The owner has AMOS prototypes that should be reviewed before hard-coding game behaviour.
-- Keep documentation up to date so new threads do not redo settled investigation.
-- Any ChatGPT response modifying ASM must provide a complete ZIP containing all current project `.asm` files and required build/include files.
+The first pack's clean-room/new-engine wording is superseded.
 
-### Current provisional technical direction
+## Modular architecture requirement
 
-- 320×256 PAL race display.
-- 5/6 bitplanes preferred as the first race target pending actual art/profiling; richer bit depth may be used on non-race screens.
-- Cars initially planned as masked blitter BOBs.
-- Race buffers use dirty-region restoration from a pristine track bitmap rather than a full-screen copy every frame, subject to profiling.
-- Track packages keep visible background separate from semantic foreground/surface/waypoint/checkpoint/pit/start data.
-- Ordinary AmigaDOS file loading first; disk/HDD differences hidden behind a loader API.
-- No compression choice until measured on project data.
+FLTF must allow independent work on:
 
-### Known access issue
+- menus/options;
+- pre-race;
+- garage/upgrades;
+- communications;
+- race;
+- results;
+- championship/arcade progression.
 
-During bootstrap, the new `From-Lights-to-Flag` GitHub URL returned 404 through public and connected GitHub retrieval. Re-check repository access in the next thread. Do not infer that the repository is empty once the owner has uploaded this pack.
+Use documented shared structures and module inputs/outputs. Provide stand-alone/direct-entry harnesses when practical. The rest of FLTF should not depend directly on recovered Indy Heat globals.
 
-### Immediate next task
+## Platform baseline
 
-Review any newly uploaded repository files and owner-supplied AMOS prototype/assets. Then resolve the toolchain/display-depth decisions and build **Milestone 0: safe AGA bootstrap + frame timing + joystick input + one background + one movable masked car**.
+Still provisional unless incoming material changes it:
 
-Do not jump directly into championship/comms implementation before the low-level display, input, memory and asset-loading foundations are proven.
+- stock Amiga 1200;
+- 68EC020;
+- AGA;
+- 2 MB Chip RAM;
+- PAL 50 Hz primary target;
+- floppy + HDD support.
+
+The exact race resolution/bitplane/renderer strategy is deliberately reopened pending recovered-engine analysis and owner assets.
+
+## Incoming material expected
+
+The owner plans to upload:
+
+- AMOS prototype source;
+- substantial prepared data/assets;
+- this documentation pack.
+
+First action in the next thread should be to inventory that material, map its intended behaviour/data structures, and reconcile it with the current Indy Heat research state.
+
+## Race-core next milestone
+
+The first meaningful race milestone is **not** "write an Indy-like handling engine".
+
+It is:
+
+> Recover a minimal self-contained Indy Heat race-core slice and prove that one retail-equivalent player-controlled car can execute the original mechanics outside the normal Indy Heat front-end, with dependencies documented.
+
+Then progressively add surfaces/collision, AI/multi-car, lap/checkpoint/pit/result logic and finally FLTF adaptations such as resolution/display changes.
+
+## Other modules
+
+Menu, garage, communications and other modules do not have to wait for race recovery. They may proceed in parallel once their inputs/outputs are established from the AMOS prototype/data.
+
+## Delivery rule
+
+Any future ChatGPT response changing `.asm` must provide the complete current ASM/include/build source set as a ZIP, with manifest and test status.
